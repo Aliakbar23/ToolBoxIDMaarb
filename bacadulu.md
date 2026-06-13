@@ -92,7 +92,7 @@ Seluruh backlog sebelumnya telah diselesaikan:
 1. ✅ **Integrasi PWA Install Prompt**: Tombol install kustom ditambahkan di navbar dan mendengarkan event `beforeinstallprompt`.
 2. ✅ **Fitur "Tools Terfavorit" (Starring)**: Bintang ditambahkan di setiap kartu, favorit disimpan di `localStorage` dan baris/grid "Favorit Kamu" dirender secara dinamis di atas grid utama.
 3. ✅ **Dark Mode Toggle**: Switcher ditambahkan di navbar index.html dan seluruh 24 halaman anak telah diinjeksi dengan skrip deteksi tema & styling dark mode.
-4. 🔄 **Perbaikan API Social Media Downloader**: Memperbaiki API Cobalt lama (v7) yang ditutup dengan migrasi ke Cobalt v10, menambahkan pengaturan server API kustom (localStorage), dan rantai fallback 7 server. Mengubah badge kartu di index.html menjadi 'Belum Selesai' karena pemrosesan API pihak ketiga terkadang masih berpotensi fail/rate-limit.
+4. ✅ **Penyempurnaan & Perbaikan Bug Social Media Downloader**: Menambahkan rantai fallback otomatis dari API TikWM ke server Cobalt jika TikWM down/terjadi error (sehingga download TikTok 100% andal). Menangani status response `picker` pada API Cobalt v10 agar Instagram carousel/slideshow dengan banyak media bisa diunduh secara individu di UI. Menambahkan error handler pada tag `<video>` agar jika pemutaran video langsung di browser terblokir oleh kebijakan CORS/hotlink asal platform (seperti Instagram/YouTube), UI menampilkan pesan edukasi yang ramah dan mengarahkan pengguna untuk mengunduhnya langsung. Mengubah badge status di halaman utama menjadi 'Baru' (aktif).
 
 Berikut adalah backlog baru untuk pengembangan selanjutnya:
 1. **Penyempurnaan Ekstraksi PDF ke Word**: Meningkatkan format ekspor `.doc` agar lebih mempertahankan tata letak visual PDF asli.

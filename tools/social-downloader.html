@@ -940,7 +940,13 @@
 
       try {
         if (url.includes('tiktok.com')) {
-          await handleTikTok(url);
+          try {
+            await handleTikTok(url);
+          } catch (tiktokErr) {
+            console.warn("TikWM failed, trying Cobalt fallback...", tiktokErr);
+            showToast('⚠️ TikWM gagal, mencoba server Cobalt...');
+            await handleUniversal(url);
+          }
         } else {
           await handleUniversal(url);
         }
@@ -978,7 +984,7 @@
       // 2. Set up media box (video player)
       const mediaBox = document.getElementById('mediaBox');
       mediaBox.innerHTML = `
-      <video controls poster="https://www.tikwm.com${data.cover}">
+      <video controls poster="https://www.tikwm.com${data.cover}" onerror="handleVideoError(this)">
         <source src="https://www.tikwm.com${data.play}" type="video/mp4">
         Browser Anda tidak mendukung tag video.
       </video>
@@ -1070,8 +1076,10 @@
         hostLabel = 'YouTube';
       } else if (url.includes('instagram.com')) {
         hostLabel = 'Instagram';
-      } else if (url.includes('twitter.com') || url.includes('x.com')) {
+      } else if (url.includes('twitter.com') || url.includes('x.com') || url.includes('t.co')) {
         hostLabel = 'Twitter / X';
+      } else if (url.includes('tiktok.com')) {
+        hostLabel = 'TikTok';
       }
 
       // Tentukan urutan server yang akan dicoba
@@ -1133,45 +1141,112 @@
         throw new Error(lastError ? lastError.message : 'Semua server pengunduh gagal merespon.');
       }
 
-      // Ambil URL hasil download
-      const streamUrl = successfulData.url;
-      if (!streamUrl) {
-        throw new Error('Server tidak mengembalikan URL unduhan.');
-      }
+      const isPicker = successfulData.status === 'picker';
 
       // 1. Update Badge & Title
       const badge = document.getElementById('platformBadge');
-      badge.className = `platform-badge ${hostLabel.toLowerCase().startsWith('youtube') ? 'youtube' : 'universal'}`;
-      badge.textContent = `🎬 ${hostLabel}`;
+      badge.className = `platform-badge ${hostLabel.toLowerCase().startsWith('youtube') ? 'youtube' : (hostLabel.toLowerCase().startsWith('tiktok') ? 'tiktok' : 'universal')}`;
+      badge.textContent = isPicker ? `📸 ${hostLabel} (Multi)` : `${hostLabel.toLowerCase().startsWith('tiktok') ? '🎵' : '🎬'} ${hostLabel}`;
 
-      document.getElementById('videoTitleDisplay').textContent = successfulData.filename || `Video dari ${hostLabel}`;
+      document.getElementById('videoTitleDisplay').textContent = successfulData.filename || `${hostLabel} Media`;
 
-      // 2. Set up media box (video player)
       const mediaBox = document.getElementById('mediaBox');
+      const downloadActionsBox = document.querySelector('.download-actions-box');
 
-      // Gunakan poster jika tersedia
-      const posterAttr = successfulData.picker ? `poster="${successfulData.picker[0].preview}"` : '';
+      if (isPicker && successfulData.picker && successfulData.picker.length > 0) {
+        // Handle picker status (Instagram slideshows, carousels, TikTok photo slides, etc.)
+        let mediaHtml = '<div style="max-height: 320px; overflow-y: auto; width: 100%; padding: 10px; display: flex; flex-direction: column; gap: 14px;">';
+        let actionsHtml = '';
 
-      mediaBox.innerHTML = `
-      <video controls ${posterAttr}>
-        <source src="${streamUrl}" type="video/mp4">
-        Browser Anda tidak mendukung tag video.
-      </video>
-    `;
+        successfulData.picker.forEach((item, index) => {
+          const num = index + 1;
+          const isVideo = item.type === 'video';
 
-      // 3. Set up download button
-      const btnVid = document.getElementById('btnDownloadVideo');
-      btnVid.href = streamUrl;
-      btnVid.textContent = '🎬 Unduh Video (MP4)';
+          if (isVideo) {
+            mediaHtml += `
+              <div style="border-radius: 12px; overflow: hidden; border: 2px solid #e8e4f0; background: #000; position: relative;">
+                <video controls style="width: 100%; max-height: 200px; display: block;" onerror="handleVideoError(this)">
+                  <source src="${item.url}" type="video/mp4">
+                </video>
+                <div style="padding: 6px; background: #faf8ff; color: #1a1225; font-size: 11px; font-weight: 800; text-align: center; border-top: 1px solid #e8e4f0;">Item #${num} (Video)</div>
+              </div>
+            `;
+            actionsHtml += `
+              <a href="${item.url}" class="dl-btn primary" target="_blank" rel="noopener" style="margin-bottom: 4px;">🎬 Unduh Video #${num} (MP4)</a>
+            `;
+          } else {
+            mediaHtml += `
+              <div style="border-radius: 12px; overflow: hidden; border: 2px solid #e8e4f0; background: #120c1a; position: relative; text-align: center;">
+                <img src="${item.url}" style="max-width: 100%; max-height: 200px; object-fit: contain; display: inline-block;" />
+                <div style="padding: 6px; background: #faf8ff; color: #1a1225; font-size: 11px; font-weight: 800; text-align: center; border-top: 1px solid #e8e4f0;">Item #${num} (Foto)</div>
+              </div>
+            `;
+            actionsHtml += `
+              <a href="${item.url}" class="dl-btn primary" target="_blank" rel="noopener" style="margin-bottom: 4px; background: #a78bfa; box-shadow: 0 4px 0 #7c3aed;">🖼️ Unduh Foto #${num} (JPG)</a>
+            `;
+          }
+        });
 
-      // Hide music button for universal cobalt stream (unless configured)
-      document.getElementById('btnDownloadMusic').style.display = 'none';
+        mediaHtml += '</div>';
+        mediaBox.innerHTML = mediaHtml;
+        downloadActionsBox.innerHTML = actionsHtml;
+
+        // Apply dark mode overrides if body is in dark-mode
+        if (document.body.classList.contains('dark-mode') || document.documentElement.classList.contains('dark-mode')) {
+          mediaBox.querySelectorAll('div[style*="background: #faf8ff"]').forEach(el => {
+            el.style.background = '#1d162a';
+            el.style.color = '#fff';
+            el.style.borderTopColor = '#2b223d';
+          });
+        }
+      } else {
+        // Handle normal stream URL (tunnel or redirect)
+        const streamUrl = successfulData.url;
+        if (!streamUrl) {
+          throw new Error('Server tidak mengembalikan URL unduhan.');
+        }
+
+        // Gunakan poster jika tersedia
+        const posterAttr = successfulData.picker ? `poster="${successfulData.picker[0].preview}"` : '';
+
+        mediaBox.innerHTML = `
+          <video controls ${posterAttr} onerror="handleVideoError(this)">
+            <source src="${streamUrl}" type="video/mp4">
+            Browser Anda tidak mendukung tag video.
+          </video>
+        `;
+
+        // Reset download actions to standard layout
+        downloadActionsBox.innerHTML = `
+          <a href="${streamUrl}" class="dl-btn primary" id="btnDownloadVideo" target="_blank" rel="noopener">🎬 Unduh Video (MP4)</a>
+          <a href="#" class="dl-btn secondary" id="btnDownloadMusic" target="_blank" rel="noopener" style="display:none">🎵 Unduh Musik (MP3)</a>
+        `;
+      }
 
       document.getElementById('resultCard').style.display = 'block';
       document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
       const usedDomain = usedServer.replace('https://', '').replace('/', '');
       showToast(`🎉 Berhasil diproses oleh server ${usedDomain}!`);
+    }
+
+    function handleVideoError(videoEl) {
+      console.warn("Playback error on video element, showing fallback.");
+      const container = videoEl.parentElement;
+      if (container) {
+        container.innerHTML = `
+          <div style="padding: 24px; text-align: center; color: #8b8099; font-weight: 700; font-size: 13.5px;">
+            <div style="font-size: 32px; margin-bottom: 12px;">🚫</div>
+            Pratinjau tidak didukung langsung oleh browser untuk video ini.<br>
+            <span style="font-size: 11px; font-weight: 600; color: #b5aed0;">(Pembatasan CORS / Hotlink dari platform asal)</span><br><br>
+            Silakan gunakan tombol <strong>Unduh Video</strong> di sebelah kanan untuk menyimpannya secara langsung.
+          </div>
+        `;
+        if (document.body.classList.contains('dark-mode') || document.documentElement.classList.contains('dark-mode')) {
+          container.style.background = '#1d162a';
+          container.querySelector('span').style.color = '#8b8099';
+        }
+      }
     }
 
     function showToast(msg) {
