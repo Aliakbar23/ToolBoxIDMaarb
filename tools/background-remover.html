@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <script>
+    (function() {
+      const t = localStorage.getItem('toolboxid-theme');
+      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark-mode');
+        document.addEventListener('DOMContentLoaded', () => document.body.classList.add('dark-mode'));
+      }
+    })();
+  </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Background Remover — ToolboxID</title>
+<meta name="description" content="Hapus background foto secara otomatis menggunakan AI yang berjalan 100% di browser. Gratis, tanpa upload, privasi terjaga." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,700;0,800;0,900;1,800;1,900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Nunito',sans-serif;background:#fefcf7;color:#1a1225;min-height:100vh;overflow-x:clip;-webkit-font-smoothing:antialiased}
+
+/* ── Decorative Blobs ── */
+.blob{position:fixed;border-radius:50%;pointer-events:none;z-index:0;opacity:.35}
+.b1{width:280px;height:280px;background:#fde68a;top:-60px;right:-60px;border-radius:60% 40% 55% 45%/50% 60% 40% 50%;animation:bf 6s ease-in-out infinite}
+.b2{width:200px;height:200px;background:#c4b5fd;bottom:-40px;left:-40px;border-radius:40% 60% 45% 55%;animation:bf 7s ease-in-out infinite reverse}
+.b3{width:120px;height:120px;background:#6ee7b7;bottom:25%;right:4%;animation:bf 5s ease-in-out infinite 1s}
+@keyframes bf{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-14px) scale(1.05)}}
+
+.page{max-width:760px;margin:0 auto;padding:0 28px 80px;position:relative;z-index:1}
+
+/* ── Navbar ── */
+nav{display:flex;align-items:center;justify-content:space-between;padding:24px 0 20px}
+.logo{display:flex;align-items:center;gap:10px;font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:#1a1225;text-decoration:none}
+.logo-box{width:36px;height:36px;background:#1a1225;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;animation:logo3dFlip 6s ease-in-out infinite;box-shadow:0 4px 12px rgba(255,107,107,.35)}
+@keyframes logo3dFlip{0%,30%,100%{transform:rotateY(0deg) scale(1)}42%,58%{transform:rotateY(180deg) scale(1.1)}}
+.btn-back{font-family:'Nunito',sans-serif;font-size:13.5px;font-weight:800;padding:8px 17px;border-radius:100px;cursor:pointer;transition:background .18s,color .18s;color:#6b6580;background:transparent;border:none;text-decoration:none}
+.btn-back:hover{background:#f0ebff;color:#7c3aed}
+
+/* ── Tool Header ── */
+.tool-header{padding:40px 0 28px}
+.tool-header-inner{display:flex;align-items:flex-start;gap:20px}
+.tool-icon-big{width:68px;height:68px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px;background:#fef2f8;border:2.5px solid #fbcfe8;box-shadow:0 6px 20px rgba(236,72,153,.12);flex-shrink:0;animation:iconBounce .6s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes iconBounce{from{opacity:0;transform:scale(.5) rotate(-15deg)}to{opacity:1;transform:scale(1) rotate(0deg)}}
+.tool-category-badge{display:inline-flex;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#be185d;background:#fdf2f8;border:2px solid #fbcfe8;border-radius:100px;padding:4px 14px;margin-bottom:8px;font-family:'Space Mono',monospace}
+.tool-header-text h1{font-size:clamp(24px,3.5vw,34px);font-weight:900;letter-spacing:-.8px;margin-bottom:6px;animation:fadeUp .5s cubic-bezier(.22,1,.36,1) .1s both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.tool-header-text p{font-size:14.5px;color:#6b6580;line-height:1.7;animation:fadeUp .5s cubic-bezier(.22,1,.36,1) .18s both}
+.ai-badge{display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;border:2px solid #bbf7d0;color:#166534;font-size:11px;font-weight:800;padding:4px 12px;border-radius:100px;margin-top:8px}
+.pulse{width:7px;height:7px;background:#22c55e;border-radius:50%;animation:pulse 1.3s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── Upload Zone ── */
+.upload-zone{border:3px dashed #fbcfe8;border-radius:20px;padding:48px 24px;text-align:center;background:#fdf2f8;cursor:pointer;transition:all .2s;margin-bottom:20px;position:relative;animation:fadeUp .5s cubic-bezier(.22,1,.36,1) .25s both}
+.upload-zone:hover,.upload-zone.drag{border-color:#db2777;background:#fce7f3;transform:scale(1.005)}
+.upload-icon{font-size:44px;display:block;margin-bottom:14px}
+.upload-title{font-size:16px;font-weight:900;margin-bottom:6px}
+.upload-sub{font-size:13px;color:#6b6580}
+.upload-sub b{color:#db2777}
+#fileInput{position:absolute;inset:0;opacity:0;cursor:pointer}
+.formats{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:14px}
+.fmt{font-size:11px;font-weight:800;padding:3px 10px;border-radius:8px;background:#fdf2f8;color:#be185d;border:1.5px solid #fbcfe8}
+
+/* ── Processing ── */
+.processing{display:none;text-align:center;padding:36px 28px;background:#fff;border:2.5px solid #f0ebff;border-radius:22px;margin-bottom:20px}
+.spinner{width:48px;height:48px;border:4px solid #f0ebff;border-top-color:#7c3aed;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.proc-title{font-size:16px;font-weight:900;margin-bottom:6px}
+.proc-sub{font-size:13px;color:#6b6580}
+.progress-bar{height:8px;background:#f0ebff;border-radius:100px;overflow:hidden;margin-top:16px;max-width:320px;margin-left:auto;margin-right:auto}
+.progress-fill{height:100%;background:linear-gradient(90deg,#a78bfa,#ec4899);border-radius:100px;width:0%;transition:width .4s}
+
+/* ── Result Panel ── */
+.result-panel{display:none;background:#fff;border:2.5px solid #f0ebff;border-radius:22px;overflow:hidden;margin-bottom:20px}
+.result-header{padding:18px 24px;border-bottom:2px solid #f0ebff;display:flex;align-items:center;justify-content:space-between}
+.result-title{font-size:15px;font-weight:900}
+.result-badge{font-size:11px;font-weight:800;background:#dcfce7;color:#166534;border:1.5px solid #bbf7d0;padding:4px 12px;border-radius:100px}
+
+.canvas-wrap{padding:24px;display:flex;flex-direction:column;gap:16px}
+.compare-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.img-box{border-radius:16px;overflow:hidden;position:relative;border:2px solid #f0ebff}
+.img-label{position:absolute;top:10px;left:10px;font-size:10px;font-weight:800;padding:4px 10px;border-radius:8px;background:rgba(255,255,255,.92);color:#1a1225;backdrop-filter:blur(4px);letter-spacing:.5px;text-transform:uppercase}
+.img-box img,.img-box canvas{width:100%;height:200px;object-fit:contain;display:block}
+.checker{background-image:linear-gradient(45deg,#e8e8e8 25%,transparent 25%),linear-gradient(-45deg,#e8e8e8 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e8e8e8 75%),linear-gradient(-45deg,transparent 75%,#e8e8e8 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0}
+
+/* ── Background Options ── */
+.bg-options{padding:0 24px 18px}
+.bg-label{font-size:12px;font-weight:800;color:#6b6580;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
+.bg-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bg-btn{width:34px;height:34px;border-radius:10px;border:2.5px solid transparent;cursor:pointer;transition:all .15s;flex-shrink:0}
+.bg-btn.active,.bg-btn:hover{border-color:#7c3aed;transform:scale(1.1)}
+.bg-btn.checker-btn{background-image:linear-gradient(45deg,#e8e8e8 25%,transparent 25%),linear-gradient(-45deg,#e8e8e8 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e8e8e8 75%),linear-gradient(-45deg,transparent 75%,#e8e8e8 75%);background-size:8px 8px;background-position:0 0,0 4px,4px -4px,-4px 0}
+.color-input-wrap{position:relative;width:34px;height:34px}
+.color-input-wrap input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.color-preview{width:34px;height:34px;border-radius:10px;border:2.5px solid #e8e4f0;pointer-events:none}
+
+/* ── Info Row ── */
+.info-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 24px 20px}
+.info-card{background:#faf9ff;border:1.5px solid #f0ebff;border-radius:12px;padding:12px;text-align:center}
+.info-num{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:#7c3aed}
+.info-label{font-size:11px;color:#9ca3af;font-weight:700;margin-top:2px}
+
+/* ── Action Row ── */
+.action-row{display:flex;gap:10px;padding:0 24px 24px;flex-wrap:wrap}
+.btn-action{font-family:'Nunito',sans-serif;font-weight:900;font-size:14px;padding:13px 22px;border-radius:14px;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s;display:inline-flex;align-items:center;gap:8px}
+.btn-action.pink{background:#db2777;color:#fff;box-shadow:0 5px 0 #9d174d;flex:1.5}
+.btn-action.pink:hover{transform:translateY(-2px);box-shadow:0 7px 0 #9d174d}
+.btn-action.outline{background:#fff;color:#1a1225;border:2.5px solid #e8e4f0;box-shadow:0 4px 0 #e8e4f0;flex:1}
+.btn-action.outline:hover{transform:translateY(-2px);box-shadow:0 6px 0 #e8e4f0}
+
+/* ── New photo button ── */
+.new-btn{display:none;margin:0 auto 24px;background:transparent;border:2.5px dashed #fbcfe8;color:#db2777;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;padding:13px 32px;border-radius:14px;cursor:pointer;transition:background .15s}
+.new-btn:hover{background:#fdf2f8}
+
+/* ── Tips ── */
+.tips-card{background:#fff;border:2.5px solid #f0ebff;border-radius:20px;padding:22px 26px;margin-bottom:20px}
+.tips-title{font-size:13px;font-weight:900;margin-bottom:14px;display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:1px;font-family:'Space Mono',monospace;color:#6b6580}
+.tips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.tip-item{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#6b6580;line-height:1.6}
+.tip-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:6px}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:28px;right:28px;background:#1a1225;color:#fff;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;padding:14px 22px;border-radius:14px;box-shadow:0 12px 40px rgba(26,18,37,.3);z-index:9999;display:flex;align-items:center;gap:10px;transform:translateY(80px);opacity:0;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* ── Footer ── */
+.footer{text-align:center;padding:24px 0 0;border-top:2px dashed #f0ebff;margin-top:32px}
+.footer p{font-size:13px;color:#c4b9d8;font-weight:700}
+.ft-heart{color:#ff6b6b}.ft-brand{color:#7c3aed;font-weight:900}
+
+@media(max-width:600px){
+  .page{padding:0 16px 60px}
+  .compare-row{grid-template-columns:1fr}
+  .info-row{grid-template-columns:1fr 1fr}
+  .action-row{flex-direction:column}
+}
+
+    /* ── Dark Mode Overrides ── */
+    html.dark-mode body, body.dark-mode { background: #120c1a !important; color: #e2daf0 !important; }
+    .dark-mode nav .logo { color: #e2daf0 !important; }
+    .dark-mode nav .logo-box { background: #2b1f3d !important; }
+    .dark-mode .btn-back { color: #a59cb5 !important; }
+    .dark-mode .btn-back:hover { background: #2b223d !important; color: #c084fc !important; }
+    .dark-mode .tool-header-text h1 { color: #fff !important; }
+    .dark-mode .tool-header-text p { color: #a59cb5 !important; }
+    .dark-mode .main-card, .dark-mode .result-card, .dark-mode .file-list-card, .dark-mode .preview-card, .dark-mode .history-card, .dark-mode .editor-box, .dark-mode .preview-box, .dark-mode .output-box, .dark-mode .tool-panel { background: #1d162a !important; border-color: #2b223d !important; color: #e2daf0 !important; }
+    .dark-mode input, .dark-mode textarea, .dark-mode select { background: #120c1a !important; border-color: #2b223d !important; color: #fff !important; }
+    .dark-mode .footer { border-top-color: #2b223d !important; }
+    .dark-mode .footer p, .dark-mode .footer p span { color: #6b607a !important; }
+    .dark-mode .file-item, .dark-mode .item-row { background: #120c1a !important; border-color: #2b223d !important; }
+    .dark-mode .file-name, .dark-mode .item-name { color: #fff !important; }
+    .dark-mode .action-btn { background: #1d162a !important; border-color: #2b223d !important; color: #a59cb5 !important; }
+    .dark-mode .action-btn:hover { border-color: #7c3aed !important; color: #c084fc !important; background: #2b223d !important; }
+    .dark-mode .toast { background: #2b223d !important; border: 1.5px solid #7c3aed !important; color: #fff !important; }
+    .dark-mode .option-group label { color: #a59cb5 !important; }
+</style>
+  <link rel="icon" href="../favicon.png" type="image/png" />
+</head>
+<body>
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+
+<div class="page">
+  <nav>
+    <a class="logo" href="../index.html#tools-section"><div class="logo-box"><img src="../logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" /></div><span>ToolboxID</span></a>
+    <a class="btn-back" href="../index.html#tools-section">← Kembali</a>
+  </nav>
+
+  <div class="tool-header">
+    <div class="tool-header-inner">
+      <div class="tool-icon-big">✂️</div>
+      <div class="tool-header-text">
+        <div class="tool-category-badge">✂️ Gambar · AI</div>
+        <h1>Background Remover</h1>
+        <p>Hapus background foto secara otomatis menggunakan AI yang berjalan langsung di browser kamu. Tidak ada upload ke server, foto kamu 100% aman.</p>
+        <div class="ai-badge"><div class="pulse"></div>AI berjalan 100% di browser — privasi terjaga</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UPLOAD ZONE -->
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept="image/*">
+    <span class="upload-icon">🖼️</span>
+    <div class="upload-title">Drop foto di sini atau klik untuk pilih</div>
+    <div class="upload-sub">Atau <b>drag & drop</b> langsung dari folder kamu</div>
+    <div class="formats">
+      <span class="fmt">JPG</span>
+      <span class="fmt">PNG</span>
+      <span class="fmt">WEBP</span>
+      <span class="fmt">BMP</span>
+    </div>
+  </div>
+
+  <!-- PROCESSING -->
+  <div class="processing" id="processing">
+    <div class="spinner"></div>
+    <div class="proc-title">Memproses foto kamu...</div>
+    <div class="proc-sub" id="procSub">Menginisialisasi AI model...</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="result-panel" id="resultPanel">
+    <div class="result-header">
+      <span class="result-title">Hasil</span>
+      <span class="result-badge">✓ Background dihapus</span>
+    </div>
+
+    <div class="canvas-wrap">
+      <div class="compare-row">
+        <div class="img-box">
+          <img id="originalImg" src="" alt="Foto asli">
+          <span class="img-label">Asli</span>
+        </div>
+        <div class="img-box checker" id="resultBox">
+          <canvas id="resultCanvas"></canvas>
+          <span class="img-label">Hasil</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-options">
+      <div class="bg-label">Warna background</div>
+      <div class="bg-row" id="bgRow">
+        <button class="bg-btn checker-btn active" data-bg="transparent" title="Transparan"></button>
+        <button class="bg-btn" style="background:#ffffff" data-bg="#ffffff" title="Putih"></button>
+        <button class="bg-btn" style="background:#000000" data-bg="#000000" title="Hitam"></button>
+        <button class="bg-btn" style="background:#ff6b6b" data-bg="#ff6b6b" title="Merah"></button>
+        <button class="bg-btn" style="background:#7c3aed" data-bg="#7c3aed" title="Ungu"></button>
+        <button class="bg-btn" style="background:#0ea5e9" data-bg="#0ea5e9" title="Biru"></button>
+        <button class="bg-btn" style="background:#22c55e" data-bg="#22c55e" title="Hijau"></button>
+        <button class="bg-btn" style="background:#fde68a" data-bg="#fde68a" title="Kuning"></button>
+        <div class="color-input-wrap" title="Pilih warna custom">
+          <div class="color-preview" id="colorPreview" style="background:#ff6b6b"></div>
+          <input type="color" id="colorPicker" value="#ff6b6b">
+        </div>
+      </div>
+    </div>
+
+    <div class="info-row" id="infoRow">
+      <div class="info-card"><div class="info-num" id="infoW">-</div><div class="info-label">Lebar (px)</div></div>
+      <div class="info-card"><div class="info-num" id="infoH">-</div><div class="info-label">Tinggi (px)</div></div>
+      <div class="info-card"><div class="info-num" id="infoSize">-</div><div class="info-label">Ukuran file</div></div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-action pink" onclick="downloadResult()">⬇ Download PNG</button>
+      <button class="btn-action outline" onclick="downloadJPG()">⬇ Download JPG</button>
+      <button class="btn-action outline" onclick="copyToClipboard()">📋 Copy</button>
+    </div>
+  </div>
+
+  <button class="new-btn" id="newBtn" onclick="resetAll()">+ Proses foto baru</button>
+
+  <div class="tips-card">
+    <div class="tips-title">💡 Tips hasil terbaik</div>
+    <div class="tips-grid">
+      <div class="tip-item"><div class="tip-dot" style="background:#ff6b6b"></div><span>Foto dengan subjek yang jelas dan kontras tinggi terhadap background</span></div>
+      <div class="tip-item"><div class="tip-dot" style="background:#7c3aed"></div><span>Pencahayaan merata, hindari bayangan keras di tepi objek</span></div>
+      <div class="tip-item"><div class="tip-dot" style="background:#22c55e"></div><span>Resolusi lebih tinggi = hasil tepi yang lebih rapi dan detail</span></div>
+      <div class="tip-item"><div class="tip-dot" style="background:#0ea5e9"></div><span>Pertama kali pakai butuh ~5-15 detik untuk download model AI (~40MB)</span></div>
+    </div>
+  </div>
+
+  <footer class="footer"><p>Dibuat dengan <span class="ft-heart">❤️</span> oleh <span class="ft-brand">Ali Akbar</span> · Gratis untuk semua orang</p></footer>
+</div>
+
+<div class="toast" id="toast"><span id="toastEmoji">✅</span><span id="toastMsg">Done!</span></div>
+
+<script type="module">
+  // ── Import @imgly/background-removal as ES Module ──
+  import { removeBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.1/+esm';
+
+  // ── State ──
+  let resultImageData = null;
+  let originalBlobURL = null;
+  let currentBg = 'transparent';
+
+  // ── DOM refs ──
+  const uploadZone = document.getElementById('uploadZone');
+  const fileInput = document.getElementById('fileInput');
+
+  // ── Upload handlers ──
+  uploadZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    uploadZone.classList.add('drag');
+  });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) processFile(file);
+    else showToast('⚠️', 'Hanya file gambar yang didukung!');
+  });
+  fileInput.addEventListener('change', e => {
+    if (e.target.files[0]) processFile(e.target.files[0]);
+  });
+
+  // ── Process file ──
+  async function processFile(file) {
+    if (!file.type.startsWith('image/')) {
+      showToast('⚠️', 'File harus berupa gambar!');
+      return;
+    }
+
+    originalBlobURL = URL.createObjectURL(file);
+    document.getElementById('originalImg').src = originalBlobURL;
+
+    uploadZone.style.display = 'none';
+    document.getElementById('processing').style.display = 'block';
+    document.getElementById('resultPanel').style.display = 'none';
+    document.getElementById('newBtn').style.display = 'none';
+
+    setProgress(5, 'Memuat model AI (pertama kali bisa ~10-15 detik)...');
+
+    try {
+      setProgress(15, 'Menganalisis gambar...');
+
+      const resultBlob = await removeBackground(file, {
+        progress: (key, current, total) => {
+          if (key === 'fetch:onnx') {
+            const pct = 15 + Math.round((current / total) * 40);
+            setProgress(Math.min(pct, 55), 'Mengunduh model AI...');
+          } else if (key === 'compute:inference') {
+            const pct = 55 + Math.round((current / total) * 35);
+            setProgress(Math.min(pct, 90), 'Menghapus background...');
+          }
+        }
+      });
+
+      setProgress(95, 'Menyiapkan hasil...');
+
+      const bitmap = await createImageBitmap(resultBlob);
+      resultImageData = { blob: resultBlob, bitmap, width: bitmap.width, height: bitmap.height };
+
+      renderResult('transparent');
+      document.getElementById('infoW').textContent = bitmap.width;
+      document.getElementById('infoH').textContent = bitmap.height;
+      document.getElementById('infoSize').textContent = formatBytes(resultBlob.size);
+
+      setProgress(100, 'Selesai!');
+      await new Promise(r => setTimeout(r, 400));
+
+      document.getElementById('processing').style.display = 'none';
+      document.getElementById('resultPanel').style.display = 'block';
+      document.getElementById('newBtn').style.display = 'block';
+      showToast('✅', 'Background berhasil dihapus!');
+
+    } catch (err) {
+      console.error('Background removal error:', err);
+      document.getElementById('processing').style.display = 'none';
+      uploadZone.style.display = 'block';
+      showToast('❌', 'Gagal memproses: ' + (err.message || 'Coba lagi.'));
+    }
+  }
+
+  // ── Render result on canvas ──
+  function renderResult(bg) {
+    if (!resultImageData) return;
+    currentBg = bg;
+    const canvas = document.getElementById('resultCanvas');
+    const { bitmap, width, height } = resultImageData;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, width, height);
+    if (bg !== 'transparent') {
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, width, height);
+    }
+    ctx.drawImage(bitmap, 0, 0);
+    const resultBox = document.getElementById('resultBox');
+    if (bg === 'transparent') {
+      resultBox.className = 'img-box checker';
+      resultBox.style.background = '';
+    } else {
+      resultBox.className = 'img-box';
+      resultBox.style.background = bg;
+    }
+  }
+
+  // ── Background color buttons ──
+  document.getElementById('bgRow').addEventListener('click', e => {
+    const btn = e.target.closest('[data-bg]');
+    if (!btn) return;
+    document.querySelectorAll('.bg-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderResult(btn.dataset.bg);
+  });
+
+  document.getElementById('colorPicker').addEventListener('input', e => {
+    const color = e.target.value;
+    document.getElementById('colorPreview').style.background = color;
+    document.querySelectorAll('.bg-btn').forEach(b => b.classList.remove('active'));
+    renderResult(color);
+  });
+
+  // ── Downloads ──
+  window.downloadResult = function() {
+    const canvas = document.getElementById('resultCanvas');
+    const link = document.createElement('a');
+    link.download = 'toolbox-id-nobg.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('⬇️', 'PNG berhasil didownload!');
+  };
+
+  window.downloadJPG = function() {
+    const canvas = document.getElementById('resultCanvas');
+    const bg = currentBg === 'transparent' ? '#ffffff' : currentBg;
+    const tmp = document.createElement('canvas');
+    tmp.width = canvas.width;
+    tmp.height = canvas.height;
+    const ctx = tmp.getContext('2d');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, tmp.width, tmp.height);
+    ctx.drawImage(canvas, 0, 0);
+    const link = document.createElement('a');
+    link.download = 'toolbox-id-nobg.jpg';
+    link.href = tmp.toDataURL('image/jpeg', 0.95);
+    link.click();
+    showToast('⬇️', 'JPG berhasil didownload!');
+  };
+
+  window.copyToClipboard = async function() {
+    try {
+      const canvas = document.getElementById('resultCanvas');
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      showToast('📋', 'Gambar disalin ke clipboard!');
+    } catch {
+      showToast('❌', 'Browser tidak support copy gambar.');
+    }
+  };
+
+  window.resetAll = function() {
+    resultImageData = null;
+    if (originalBlobURL) URL.revokeObjectURL(originalBlobURL);
+    originalBlobURL = null;
+    document.getElementById('fileInput').value = '';
+    document.getElementById('uploadZone').style.display = 'block';
+    document.getElementById('resultPanel').style.display = 'none';
+    document.getElementById('newBtn').style.display = 'none';
+    document.getElementById('processing').style.display = 'none';
+    document.querySelectorAll('.bg-btn').forEach((b, i) => {
+      b.classList.toggle('active', i === 0);
+    });
+  };
+
+  // ── Helpers ──
+  function setProgress(pct, msg) {
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('procSub').textContent = msg;
+  }
+
+  function formatBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1048576).toFixed(2) + ' MB';
+  }
+
+  function showToast(emoji, msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastEmoji').textContent = emoji;
+    document.getElementById('toastMsg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), 3500);
+  }
+</script>
+</body>
+</html>

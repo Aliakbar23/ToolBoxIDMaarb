@@ -1,0 +1,24 @@
+{
+  "name": "ToolboxID",
+  "short_name": "ToolboxID",
+  "description": "Koleksi tools utility gratis, cepat, dan 100% offline-friendly.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fefcf7",
+  "theme_color": "#7c3aed",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

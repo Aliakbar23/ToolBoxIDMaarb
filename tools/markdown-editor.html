@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <script>
+    (function() {
+      const t = localStorage.getItem('toolboxid-theme');
+      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark-mode');
+        document.addEventListener('DOMContentLoaded', () => document.body.classList.add('dark-mode'));
+      }
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markdown Editor — ToolboxID</title>
+  <meta name="description" content="Tulis dan preview Markdown langsung di browser tanpa install apapun." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,700;0,800;0,900;1,800;1,900&family=Space+Mono:wght@700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body { font-family: 'Nunito', sans-serif; background: #fefcf7; color: #1a1225; overflow-x: clip; -webkit-font-smoothing: antialiased; }
+    .page { max-width: 1100px; margin: 0 auto; padding: 0 32px 60px; }
+
+    /* ── Navbar ── */
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 24px 0 20px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-family: 'Space Mono', monospace; font-size: 15px; font-weight: 700; color: #1a1225; text-decoration: none; }
+    .logo-box { width: 36px; height: 36px; background: #1a1225; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; animation: logo3dFlip 6s ease-in-out infinite; box-shadow: 0 4px 12px rgba(255,107,107,.35); }
+    @keyframes logo3dFlip { 0%,30%,100%{transform:rotateY(0deg) scale(1)} 42%,58%{transform:rotateY(180deg) scale(1.1)} }
+    .nav-right { display: flex; align-items: center; gap: 8px; }
+    .btn-back { font-family: 'Nunito', sans-serif; font-size: 13.5px; font-weight: 800; padding: 8px 17px; border-radius: 100px; cursor: pointer; transition: background .18s, color .18s; color: #6b6580; background: transparent; border: none; text-decoration: none; }
+    .btn-back:hover { background: #f0ebff; color: #7c3aed; }
+    .nav-actions { display: flex; gap: 8px; }
+    .btn-nav-action { font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800; padding: 8px 16px; border-radius: 100px; cursor: pointer; transition: background .18s, color .18s, transform .15s; border: 2px solid #e8e4f0; background: #fff; color: #1a1225; }
+    .btn-nav-action:hover { border-color: #c4b5fd; background: #f5f3ff; color: #7c3aed; transform: translateY(-1px); }
+    .btn-nav-action.primary { background: #7c3aed; color: #fff; border-color: transparent; box-shadow: 0 4px 0 #5b21b6; }
+    .btn-nav-action.primary:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #5b21b6; }
+
+    /* ── Tool Header ── */
+    .tool-header { padding: 32px 0 24px; }
+    .tool-header-inner { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
+    .tool-icon-big { width: 64px; height: 64px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 30px; background: #f5f3ff; border: 2.5px solid #ddd6fe; box-shadow: 0 6px 20px rgba(124,58,237,.12); flex-shrink: 0; }
+    .tool-category-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #6d28d9; background: #f5f3ff; border: 2px solid #ddd6fe; border-radius: 100px; padding: 4px 14px; margin-bottom: 8px; font-family: 'Space Mono', monospace; }
+    .tool-header-text h1 { font-size: clamp(24px, 3.5vw, 32px); font-weight: 900; letter-spacing: -.8px; margin-bottom: 6px; }
+    .tool-header-text p { font-size: 14.5px; color: #6b6580; line-height: 1.7; }
+
+    /* ── Toolbar ── */
+    .editor-toolbar { display: flex; gap: 4px; flex-wrap: wrap; padding: 10px 14px; background: #fff; border: 2.5px solid #f0ebff; border-radius: 14px 14px 0 0; border-bottom: none; }
+    .tb-btn { font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; padding: 5px 11px; border-radius: 8px; border: 1.5px solid #f0ebff; background: transparent; cursor: pointer; color: #6b6580; transition: background .15s, color .15s, border-color .15s; }
+    .tb-btn:hover { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
+    .tb-separator { width: 1px; background: #f0ebff; margin: 4px 4px; align-self: stretch; }
+    .tb-word-count { margin-left: auto; font-size: 12px; font-weight: 800; color: #b5aed0; font-family: 'Space Mono', monospace; display: flex; align-items: center; }
+
+    /* ── Split Pane ── */
+    .editor-split { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 2.5px solid #f0ebff; border-radius: 0 0 20px 20px; overflow: hidden; background: #fff; min-height: 520px; }
+
+    /* ── Editor Pane ── */
+    .editor-pane { display: flex; flex-direction: column; border-right: 2px solid #f0ebff; }
+    .pane-label { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #b5aed0; padding: 10px 18px; border-bottom: 1.5px solid #f0ebff; background: #faf8ff; }
+    textarea#mdInput { flex: 1; width: 100%; border: none; outline: none; resize: none; font-family: 'Space Mono', monospace; font-size: 13.5px; line-height: 1.75; padding: 20px; background: #fff; color: #1a1225; caret-color: #7c3aed; }
+    textarea#mdInput::placeholder { color: #d4cceb; }
+
+    /* ── Preview Pane ── */
+    .preview-pane { display: flex; flex-direction: column; overflow: hidden; }
+    .preview-content { flex: 1; padding: 20px 24px; overflow-y: auto; line-height: 1.75; font-size: 14.5px; }
+    /* Markdown rendered styles */
+    .preview-content h1,.preview-content h2,.preview-content h3,.preview-content h4 { font-weight: 900; margin: 1.2em 0 .5em; letter-spacing: -.3px; }
+    .preview-content h1 { font-size: 1.9em; border-bottom: 2.5px solid #f0ebff; padding-bottom: .3em; }
+    .preview-content h2 { font-size: 1.5em; border-bottom: 1.5px solid #f0ebff; padding-bottom: .2em; }
+    .preview-content h3 { font-size: 1.2em; }
+    .preview-content p { margin: .7em 0; }
+    .preview-content code { font-family: 'Space Mono', monospace; font-size: 12.5px; background: #f5f3ff; color: #7c3aed; padding: 2px 7px; border-radius: 6px; border: 1.5px solid #ede9fe; }
+    .preview-content pre { background: #1a1225; border-radius: 12px; padding: 18px; margin: 1em 0; overflow-x: auto; }
+    .preview-content pre code { background: none; color: #e2d9f3; border: none; padding: 0; font-size: 13px; }
+    .preview-content blockquote { border-left: 4px solid #c4b5fd; padding: .5em 1em; background: #f5f3ff; border-radius: 0 10px 10px 0; margin: 1em 0; color: #6b6580; }
+    .preview-content ul,.preview-content ol { padding-left: 1.5em; margin: .7em 0; }
+    .preview-content li { margin: .25em 0; }
+    .preview-content a { color: #7c3aed; text-decoration: underline; }
+    .preview-content table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 13.5px; }
+    .preview-content th { background: #f5f3ff; padding: 8px 14px; border: 1.5px solid #e8e4f0; font-weight: 900; }
+    .preview-content td { padding: 8px 14px; border: 1.5px solid #f0ebff; }
+    .preview-content tr:nth-child(even) td { background: #faf8ff; }
+    .preview-content hr { border: none; border-top: 2.5px dashed #f0ebff; margin: 1.5em 0; }
+    .preview-content img { max-width: 100%; border-radius: 10px; }
+
+    /* ── Empty preview placeholder ── */
+    .preview-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #c4b9d8; gap: 10px; padding: 40px; text-align: center; }
+    .preview-empty .big-emoji { font-size: 40px; }
+    .preview-empty p { font-size: 13.5px; font-weight: 700; line-height: 1.6; }
+
+    /* ── Copy/Download bar ── */
+    .bottom-bar { display: flex; gap: 10px; padding: 14px 0 0; flex-wrap: wrap; }
+    .btn-action { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 14px; padding: 12px 24px; border-radius: 14px; border: none; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+    .btn-action.purple { background: #7c3aed; color: #fff; box-shadow: 0 5px 0 #5b21b6; }
+    .btn-action.purple:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #5b21b6; }
+    .btn-action.outline { background: #fff; color: #1a1225; border: 2.5px solid #e8e4f0; box-shadow: 0 4px 0 #e8e4f0; }
+    .btn-action.outline:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #e8e4f0; }
+    .btn-action.danger { background: #fff; color: #ef4444; border: 2.5px solid #fecaca; box-shadow: 0 4px 0 #fecaca; }
+    .btn-action.danger:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #fecaca; }
+
+    /* ── Toast ── */
+    .toast { position: fixed; bottom: 28px; right: 28px; background: #1a1225; color: #fff; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; padding: 14px 22px; border-radius: 14px; box-shadow: 0 12px 40px rgba(26,18,37,.3); z-index: 9999; display: flex; align-items: center; gap: 10px; transform: translateY(80px); opacity: 0; transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .3s; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ── Footer ── */
+    .footer { text-align: center; padding: 24px 0 0; border-top: 2px dashed #f0ebff; margin-top: 20px; }
+    .footer p { font-size: 13px; color: #c4b9d8; font-weight: 700; }
+    .ft-heart { color: #ff6b6b; }
+    .ft-brand { color: #7c3aed; font-weight: 900; }
+
+    @media (max-width: 720px) {
+      .page { padding: 0 16px 60px; }
+      .editor-split { grid-template-columns: 1fr; }
+      .editor-pane { border-right: none; border-bottom: 2px solid #f0ebff; }
+    }
+  
+    /* ── Dark Mode Overrides ── */
+    html.dark-mode body, body.dark-mode { background: #120c1a !important; color: #e2daf0 !important; }
+    .dark-mode nav .logo { color: #e2daf0 !important; }
+    .dark-mode nav .logo-box { background: #2b1f3d !important; }
+    .dark-mode .btn-back { color: #a59cb5 !important; }
+    .dark-mode .btn-back:hover { background: #2b223d !important; color: #c084fc !important; }
+    .dark-mode .tool-header-text h1 { color: #fff !important; }
+    .dark-mode .tool-header-text p { color: #a59cb5 !important; }
+    .dark-mode .main-card, .dark-mode .result-card, .dark-mode .file-list-card, .dark-mode .preview-card, .dark-mode .history-card, .dark-mode .editor-box, .dark-mode .preview-box, .dark-mode .output-box, .dark-mode .tool-panel { background: #1d162a !important; border-color: #2b223d !important; color: #e2daf0 !important; }
+    .dark-mode input, .dark-mode textarea, .dark-mode select { background: #120c1a !important; border-color: #2b223d !important; color: #fff !important; }
+    .dark-mode .footer { border-top-color: #2b223d !important; }
+    .dark-mode .footer p, .dark-mode .footer p span { color: #6b607a !important; }
+    .dark-mode .file-item, .dark-mode .item-row { background: #120c1a !important; border-color: #2b223d !important; }
+    .dark-mode .file-name, .dark-mode .item-name { color: #fff !important; }
+    .dark-mode .action-btn { background: #1d162a !important; border-color: #2b223d !important; color: #a59cb5 !important; }
+    .dark-mode .action-btn:hover { border-color: #7c3aed !important; color: #c084fc !important; background: #2b223d !important; }
+    .dark-mode .toast { background: #2b223d !important; border: 1.5px solid #7c3aed !important; color: #fff !important; }
+    .dark-mode .option-group label { color: #a59cb5 !important; }
+</style>
+  <link rel="icon" href="../favicon.png" type="image/png" />
+</head>
+<body>
+<div class="page">
+  <!-- Navbar -->
+  <nav>
+    <a class="logo" href="../index.html#tools-section">
+      <div class="logo-box" aria-hidden="true"><img src="../logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" /></div>
+      <span>ToolboxID</span>
+    </a>
+    <div class="nav-right">
+      <a class="btn-back" href="../index.html#tools-section">← Kembali</a>
+    </div>
+  </nav>
+
+  <!-- Tool Header -->
+  <div class="tool-header">
+    <div class="tool-header-inner">
+      <div class="tool-icon-big" aria-hidden="true">📝</div>
+      <div class="tool-header-text">
+        <div class="tool-category-badge">✍️ Teks · Web</div>
+        <h1>Markdown Editor</h1>
+        <p>Tulis dan preview Markdown langsung di browser — real-time, tanpa install, tanpa login.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="editor-toolbar">
+    <button class="tb-btn" onclick="insertMd('**', '**')" title="Bold">B</button>
+    <button class="tb-btn" onclick="insertMd('*', '*')" title="Italic" style="font-style:italic">I</button>
+    <button class="tb-btn" onclick="insertMd('~~', '~~')" title="Strikethrough" style="text-decoration:line-through">S</button>
+    <div class="tb-separator"></div>
+    <button class="tb-btn" onclick="insertLine('# ')" title="H1">H1</button>
+    <button class="tb-btn" onclick="insertLine('## ')" title="H2">H2</button>
+    <button class="tb-btn" onclick="insertLine('### ')" title="H3">H3</button>
+    <div class="tb-separator"></div>
+    <button class="tb-btn" onclick="insertLine('- ')" title="Bullet List">• List</button>
+    <button class="tb-btn" onclick="insertLine('1. ')" title="Numbered List">1. List</button>
+    <button class="tb-btn" onclick="insertLine('> ')" title="Blockquote">" Quote</button>
+    <div class="tb-separator"></div>
+    <button class="tb-btn" onclick="insertMd('`', '`')" title="Inline Code">`code`</button>
+    <button class="tb-btn" onclick="insertBlock('```\n', '\n```')" title="Code Block">``` block</button>
+    <button class="tb-btn" onclick="insertLine('---\n')" title="Divider">― HR</button>
+    <button class="tb-btn" onclick="insertLink()" title="Link">🔗 Link</button>
+    <div class="tb-separator"></div>
+    <span class="tb-word-count" id="wordCount">0 kata · 0 baris</span>
+  </div>
+
+  <!-- Editor Split -->
+  <div class="editor-split">
+    <div class="editor-pane">
+      <div class="pane-label">✏️ Editor</div>
+      <textarea id="mdInput" placeholder="Tulis Markdown di sini...&#10;&#10;Contoh:&#10;# Judul Besar&#10;## Sub Judul&#10;**tebal**, *miring*, `kode`&#10;&#10;- Item 1&#10;- Item 2" oninput="onInput()"></textarea>
+    </div>
+    <div class="preview-pane">
+      <div class="pane-label">👁️ Preview</div>
+      <div class="preview-content" id="previewContent">
+        <div class="preview-empty">
+          <span class="big-emoji">📄</span>
+          <p>Preview akan muncul di sini<br>saat kamu mulai menulis.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="bottom-bar">
+    <button class="btn-action purple" id="copy-html-btn" onclick="copyHTML()">📋 Copy HTML</button>
+    <button class="btn-action outline" id="copy-md-btn" onclick="copyMD()">📝 Copy Markdown</button>
+    <button class="btn-action outline" id="download-btn" onclick="downloadMD()">⬇️ Download .md</button>
+    <button class="btn-action danger" id="clear-btn" onclick="clearEditor()">🗑️ Clear</button>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer" style="margin-top:32px">
+    <p>Dibuat dengan <span class="ft-heart">❤️</span> oleh <span class="ft-brand">Ali Akbar</span> · Gratis untuk semua orang</p>
+  </footer>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span id="toastEmoji">✅</span>
+  <span id="toastMsg">Done!</span>
+</div>
+
+<script>
+  marked.setOptions({ breaks: true, gfm: true });
+
+  const mdInput = document.getElementById('mdInput');
+  const preview = document.getElementById('previewContent');
+
+  function onInput() {
+    const val = mdInput.value;
+    if (!val.trim()) {
+      preview.innerHTML = `<div class="preview-empty"><span class="big-emoji">📄</span><p>Preview akan muncul di sini<br>saat kamu mulai menulis.</p></div>`;
+    } else {
+      preview.innerHTML = marked.parse(val);
+    }
+    updateWordCount(val);
+  }
+
+  function updateWordCount(val) {
+    const words = val.trim() ? val.trim().split(/\s+/).length : 0;
+    const lines = val.split('\n').length;
+    document.getElementById('wordCount').textContent = `${words} kata · ${lines} baris`;
+  }
+
+  function insertMd(before, after) {
+    const ta = mdInput;
+    const s = ta.selectionStart, e = ta.selectionEnd;
+    const selected = ta.value.slice(s, e);
+    const replacement = before + selected + after;
+    ta.value = ta.value.slice(0, s) + replacement + ta.value.slice(e);
+    ta.setSelectionRange(s + before.length, s + before.length + selected.length);
+    ta.focus();
+    onInput();
+  }
+
+  function insertLine(prefix) {
+    const ta = mdInput;
+    const s = ta.selectionStart;
+    const lineStart = ta.value.lastIndexOf('\n', s - 1) + 1;
+    ta.value = ta.value.slice(0, lineStart) + prefix + ta.value.slice(lineStart);
+    ta.setSelectionRange(lineStart + prefix.length, lineStart + prefix.length);
+    ta.focus();
+    onInput();
+  }
+
+  function insertBlock(before, after) {
+    const ta = mdInput;
+    const s = ta.selectionStart, e = ta.selectionEnd;
+    const selected = ta.value.slice(s, e);
+    const text = before + selected + after;
+    ta.value = ta.value.slice(0, s) + text + ta.value.slice(e);
+    ta.setSelectionRange(s + before.length, s + before.length + selected.length);
+    ta.focus();
+    onInput();
+  }
+
+  function insertLink() {
+    const url = prompt('Masukkan URL:');
+    if (!url) return;
+    const label = prompt('Masukkan label link:', 'Link');
+    insertMd(`[${label || 'Link'}](`, `${url})`);
+  }
+
+  function copyHTML() {
+    const html = marked.parse(mdInput.value);
+    navigator.clipboard.writeText(html).then(() => showToast('✅', 'HTML berhasil di-copy!'));
+  }
+
+  function copyMD() {
+    navigator.clipboard.writeText(mdInput.value).then(() => showToast('📝', 'Markdown berhasil di-copy!'));
+  }
+
+  function downloadMD() {
+    if (!mdInput.value.trim()) { showToast('⚠️', 'Editor masih kosong!'); return; }
+    const blob = new Blob([mdInput.value], { type: 'text/markdown' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'document.md';
+    a.click();
+    showToast('⬇️', 'File .md berhasil didownload!');
+  }
+
+  function clearEditor() {
+    if (!mdInput.value.trim()) return;
+    if (confirm('Hapus semua isi editor?')) {
+      mdInput.value = '';
+      onInput();
+      showToast('🗑️', 'Editor dikosongkan!');
+    }
+  }
+
+  function showToast(emoji, msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toastEmoji').textContent = emoji;
+    document.getElementById('toastMsg').textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  // Keyboard shortcuts
+  mdInput.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'b') { e.preventDefault(); insertMd('**','**'); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'i') { e.preventDefault(); insertMd('*','*'); }
+    if (e.key === 'Tab') { e.preventDefault(); insertMd('  ',''); }
+  });
+</script>
+</body>
+</html>

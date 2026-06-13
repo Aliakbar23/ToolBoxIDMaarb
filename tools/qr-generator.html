@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <script>
+    (function() {
+      const t = localStorage.getItem('toolboxid-theme');
+      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark-mode');
+        document.addEventListener('DOMContentLoaded', () => document.body.classList.add('dark-mode'));
+      }
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Code Generator — ToolboxID</title>
+  <meta name="description" content="Buat QR Code gratis secara instan dari URL, teks, WiFi, atau kontak. Kustomisasi warna, tambahkan logo/emoji, dan unduh format PNG/SVG." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,700;0,800;0,900;1,800;1,900&family=Space+Mono:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Nunito', sans-serif; background: #fefcf7; color: #1a1225; overflow-x: clip; -webkit-font-smoothing: antialiased; }
+    .page { max-width: 1100px; margin: 0 auto; padding: 0 32px 80px; }
+
+    /* ── Navbar ── */
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 24px 0 20px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-family: 'Space Mono', monospace; font-size: 15px; font-weight: 700; color: #1a1225; text-decoration: none; }
+    .logo-box { width: 36px; height: 36px; background: #1a1225; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; animation: logo3dFlip 6s ease-in-out infinite; box-shadow: 0 4px 12px rgba(255,107,107,.35); }
+    @keyframes logo3dFlip { 0%,30%,100%{transform:rotateY(0deg) scale(1)} 42%,58%{transform:rotateY(180deg) scale(1.1)} }
+    .btn-back { font-family: 'Nunito', sans-serif; font-size: 13.5px; font-weight: 800; padding: 8px 17px; border-radius: 100px; cursor: pointer; transition: background .18s, color .18s; color: #6b6580; background: transparent; border: none; text-decoration: none; }
+    .btn-back:hover { background: #f0ebff; color: #7c3aed; }
+
+    /* ── Tool Header ── */
+    .tool-header { padding: 40px 0 28px; }
+    .tool-header-inner { display: flex; align-items: flex-start; gap: 20px; }
+    .tool-icon-big { width: 68px; height: 68px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 32px; background: #f5f3ff; border: 2.5px solid #ddd6fe; box-shadow: 0 6px 20px rgba(124,58,237,.12); flex-shrink: 0; animation: iconBounce .6s cubic-bezier(.34,1.56,.64,1) both; }
+    @keyframes iconBounce { from{opacity:0;transform:scale(.5) rotate(-15deg)} to{opacity:1;transform:scale(1) rotate(0deg)} }
+    .tool-category-badge { display: inline-flex; font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #6d28d9; background: #f5f3ff; border: 2px solid #ddd6fe; border-radius: 100px; padding: 4px 14px; margin-bottom: 8px; font-family: 'Space Mono', monospace; }
+    .tool-header-text h1 { font-size: clamp(24px, 3.5vw, 34px); font-weight: 900; letter-spacing: -.8px; margin-bottom: 6px; animation: fadeUp .5s cubic-bezier(.22,1,.36,1) .1s both; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+    .tool-header-text p { font-size: 14.5px; color: #6b6580; line-height: 1.7; animation: fadeUp .5s cubic-bezier(.22,1,.36,1) .18s both; }
+
+    /* ── Layout Grid ── */
+    .calculator-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 28px; animation: fadeUp .5s cubic-bezier(.22,1,.36,1) .25s both; }
+
+    /* ── Cards ── */
+    .main-card { background: #fff; border: 2.5px solid #f0ebff; border-radius: 24px; padding: 32px; box-shadow: 0 10px 30px rgba(124,58,237,0.02); height: fit-content; }
+    .preview-card { background: #fff; border: 2.5px solid #f0ebff; border-radius: 24px; padding: 32px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; height: fit-content; position: sticky; top: 20px; }
+
+    /* Content Type Tabs */
+    .type-tabs { display: grid; grid-template-columns: repeat(4, 1fr); background: #faf8ff; border: 2.5px solid #f0ebff; border-radius: 16px; padding: 5px; margin-bottom: 24px; }
+    .type-tab-btn { font-family: 'Nunito', sans-serif; font-size: 13.5px; font-weight: 800; border: none; background: transparent; padding: 10px 5px; border-radius: 11px; cursor: pointer; color: #6b6580; transition: all .15s; text-align: center; }
+    .type-tab-btn.active { background: #7c3aed; color: #fff; box-shadow: 0 4px 10px rgba(124,58,237,.25); }
+    .type-tab-btn:hover:not(.active) { background: #f0ebff; color: #7c3aed; }
+
+    /* Form elements */
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 800; color: #4c4660; margin-bottom: 6px; }
+    .form-input, .form-textarea, .form-select { width: 100%; font-family: 'Nunito', sans-serif; font-size: 14.5px; font-weight: 700; padding: 11px 14px; border: 2.5px solid #e8e4f0; border-radius: 12px; background: #fff; color: #1a1225; outline: none; transition: border-color .2s, box-shadow .2s; }
+    .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: #a78bfa; box-shadow: 0 0 0 4px rgba(167,139,250,.15); }
+    .form-input::placeholder, .form-textarea::placeholder { color: #c4b9d8; }
+    .form-textarea { resize: vertical; min-height: 90px; }
+    .form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238b8099' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; background-size: 16px; cursor: pointer; }
+
+    .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 800; color: #4c4660; cursor: pointer; }
+    .checkbox-label input[type=checkbox] { width: 18px; height: 18px; accent-color: #7c3aed; cursor: pointer; }
+
+    /* Customization Panels */
+    .panel-section-title { font-size: 13px; font-weight: 900; color: #6b6580; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Space Mono', monospace; margin: 28px 0 14px; padding-bottom: 6px; border-bottom: 2px dashed #f0ebff; }
+    
+    .color-pickers { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .color-input-wrap { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 2.5px solid #e8e4f0; border-radius: 12px; background: #fff; }
+    .color-input-wrap input[type=color] { border: none; background: transparent; width: 32px; height: 32px; cursor: pointer; border-radius: 6px; }
+    .color-hex-val { font-family: 'Space Mono', monospace; font-size: 13.5px; font-weight: 700; color: #1a1225; }
+
+    /* Preset list */
+    .presets-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .preset-btn { font-family: 'Nunito', sans-serif; font-size: 12.5px; font-weight: 800; padding: 6px 12px; border-radius: 8px; border: 2px solid #e8e4f0; background: #fff; color: #6b6580; cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 4px; }
+    .preset-btn:hover { border-color: #ddd6fe; color: #7c3aed; background: #f5f3ff; }
+
+    /* Logo Presets Grid */
+    .logo-presets { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 10px; }
+    .logo-preset-btn { font-size: 20px; padding: 8px; border-radius: 10px; border: 2px solid #e8e4f0; background: #fff; cursor: pointer; transition: all .15s; display: flex; align-items: center; justify-content: center; }
+    .logo-preset-btn:hover, .logo-preset-btn.active { border-color: #a78bfa; background: #f5f3ff; }
+
+    /* File upload design */
+    .upload-box { border: 2.5px dashed #c4b5fd; border-radius: 14px; padding: 16px; text-align: center; cursor: pointer; background: #faf8ff; transition: all .18s; margin-top: 10px; position: relative; }
+    .upload-box:hover { border-color: #7c3aed; background: #f5f3ff; }
+    .upload-box-text { font-size: 12.5px; font-weight: 800; color: #6b6580; }
+    .upload-box-sub { font-size: 11px; color: #b5aed0; margin-top: 2px; }
+    .logo-remove-btn { display: none; margin-top: 8px; font-size: 11px; font-weight: 800; color: #ef4444; background: #fef2f2; border: 1.5px solid #fee2e2; border-radius: 6px; padding: 3px 8px; cursor: pointer; }
+    .logo-remove-btn:hover { background: #fee2e2; }
+
+    /* ── Live Preview ── */
+    .qr-preview-container { background: #faf8ff; border: 2.5px solid #f0ebff; border-radius: 20px; padding: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; box-shadow: inset 0 4px 12px rgba(124,58,237,0.02); min-height: 240px; }
+    #qrCanvas { border-radius: 14px; border: 4px solid #fff; box-shadow: 0 8px 24px rgba(124,58,237,0.06); background: #fff; max-width: 100%; height: auto; }
+    
+    .download-section { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+    .download-format-row { display: grid; grid-template-columns: 1fr 1.2fr; gap: 10px; }
+    .select-format { font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; padding: 12px; border: 2.5px solid #e8e4f0; border-radius: 12px; background: #fff; color: #1a1225; cursor: pointer; }
+    .btn-download { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 14.5px; padding: 12px; border-radius: 12px; border: none; cursor: pointer; background: #7c3aed; color: #fff; box-shadow: 0 4px 0 #5b21b6; transition: transform .15s, box-shadow .15s; }
+    .btn-download:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #5b21b6; }
+    .btn-download:active { transform: translateY(2px); box-shadow: 0 2px 0 #5b21b6; }
+
+    .toast { position: fixed; bottom: 28px; right: 28px; background: #1a1225; color: #fff; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; padding: 14px 22px; border-radius: 14px; box-shadow: 0 12px 40px rgba(26,18,37,.3); z-index: 9999; transform: translateY(80px); opacity: 0; transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .3s; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* Form Fields Sections */
+    .form-section { display: none; }
+    .form-section.active { display: block; }
+
+    /* Responsive */
+    @media (max-width: 800px) {
+      .page { padding: 0 16px 60px; }
+      .calculator-grid { grid-template-columns: 1fr; }
+      .preview-card { position: static; }
+    }
+  
+    /* ── Dark Mode Overrides ── */
+    html.dark-mode body, body.dark-mode { background: #120c1a !important; color: #e2daf0 !important; }
+    .dark-mode nav .logo { color: #e2daf0 !important; }
+    .dark-mode nav .logo-box { background: #2b1f3d !important; }
+    .dark-mode .btn-back { color: #a59cb5 !important; }
+    .dark-mode .btn-back:hover { background: #2b223d !important; color: #c084fc !important; }
+    .dark-mode .tool-header-text h1 { color: #fff !important; }
+    .dark-mode .tool-header-text p { color: #a59cb5 !important; }
+    .dark-mode .main-card, .dark-mode .result-card, .dark-mode .file-list-card, .dark-mode .preview-card, .dark-mode .history-card, .dark-mode .editor-box, .dark-mode .preview-box, .dark-mode .output-box, .dark-mode .tool-panel { background: #1d162a !important; border-color: #2b223d !important; color: #e2daf0 !important; }
+    .dark-mode input, .dark-mode textarea, .dark-mode select { background: #120c1a !important; border-color: #2b223d !important; color: #fff !important; }
+    .dark-mode .footer { border-top-color: #2b223d !important; }
+    .dark-mode .footer p, .dark-mode .footer p span { color: #6b607a !important; }
+    .dark-mode .file-item, .dark-mode .item-row { background: #120c1a !important; border-color: #2b223d !important; }
+    .dark-mode .file-name, .dark-mode .item-name { color: #fff !important; }
+    .dark-mode .action-btn { background: #1d162a !important; border-color: #2b223d !important; color: #a59cb5 !important; }
+    .dark-mode .action-btn:hover { border-color: #7c3aed !important; color: #c084fc !important; background: #2b223d !important; }
+    .dark-mode .toast { background: #2b223d !important; border: 1.5px solid #7c3aed !important; color: #fff !important; }
+    .dark-mode .option-group label { color: #a59cb5 !important; }
+</style>
+  <link rel="icon" href="../favicon.png" type="image/png" />
+</head>
+<body>
+<div class="page">
+  <nav>
+    <a class="logo" href="../index.html#tools-section"><div class="logo-box"><img src="../logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" /></div><span>ToolboxID</span></a>
+    <a class="btn-back" href="../index.html#tools-section">← Kembali</a>
+  </nav>
+
+  <div class="tool-header">
+    <div class="tool-header-inner">
+      <div class="tool-icon-big">🔮</div>
+      <div class="tool-header-text">
+        <div class="tool-category-badge">✨ Desain · Utility</div>
+        <h1>QR Code Generator</h1>
+        <p>Buat QR Code berkualitas tinggi secara instan. Dukung kustomisasi warna foreground/background, logo tengah, dan emoji preset secara offline.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="calculator-grid">
+    <!-- Left Column: Settings -->
+    <div class="main-card">
+      <!-- Content Type Tabs -->
+      <div class="type-tabs">
+        <button class="type-tab-btn active" id="tab-url" onclick="switchType('url')">🌐 URL</button>
+        <button class="type-tab-btn" id="tab-text" onclick="switchType('text')">📄 Teks</button>
+        <button class="type-tab-btn" id="tab-wifi" onclick="switchType('wifi')">📶 WiFi</button>
+        <button class="type-tab-btn" id="tab-contact" onclick="switchType('contact')">👤 Kontak</button>
+      </div>
+
+      <!-- URL Form -->
+      <div id="section-url" class="form-section active">
+        <div class="form-group">
+          <label for="urlInput">Link / URL</label>
+          <input type="url" id="urlInput" class="form-input" placeholder="https://example.com" oninput="liveUpdate()" />
+        </div>
+      </div>
+
+      <!-- Teks Form -->
+      <div id="section-text" class="form-section">
+        <div class="form-group">
+          <label for="textInput">Konten Teks</label>
+          <textarea id="textInput" class="form-textarea" placeholder="Tulis teks rahasia, pesan, atau memo di sini..." oninput="liveUpdate()"></textarea>
+        </div>
+      </div>
+
+      <!-- WiFi Form -->
+      <div id="section-wifi" class="form-section">
+        <div class="form-group">
+          <label for="wifiSSID">SSID / Nama WiFi</label>
+          <input type="text" id="wifiSSID" class="form-input" placeholder="Contoh: WiFi_Rumah" oninput="liveUpdate()" />
+        </div>
+        <div class="form-group">
+          <label for="wifiPassword">Password WiFi</label>
+          <input type="password" id="wifiPassword" class="form-input" placeholder="Password jaringan WiFi" oninput="liveUpdate()" />
+        </div>
+        <div class="form-group">
+          <label for="wifiEnc">Jenis Keamanan</label>
+          <select id="wifiEnc" class="form-select" onchange="liveUpdate()">
+            <option value="WPA">WPA / WPA2</option>
+            <option value="WEP">WEP</option>
+            <option value="nopass">Tanpa Password (Open)</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-top:10px">
+          <label class="checkbox-label">
+            <input type="checkbox" id="wifiHidden" onchange="liveUpdate()" />
+            <span>Jaringan Tersembunyi (Hidden SSID)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Kontak Form -->
+      <div id="section-contact" class="form-section">
+        <div class="form-group" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label for="contactFN">Nama Depan</label>
+            <input type="text" id="contactFN" class="form-input" placeholder="Budi" oninput="liveUpdate()" />
+          </div>
+          <div>
+            <label for="contactLN">Nama Belakang</label>
+            <input type="text" id="contactLN" class="form-input" placeholder="Santoso" oninput="liveUpdate()" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="contactTel">Nomor Telepon</label>
+          <input type="tel" id="contactTel" class="form-input" placeholder="081234567890" oninput="liveUpdate()" />
+        </div>
+        <div class="form-group">
+          <label for="contactEmail">Email</label>
+          <input type="email" id="contactEmail" class="form-input" placeholder="budi@domain.com" oninput="liveUpdate()" />
+        </div>
+        <div class="form-group">
+          <label for="contactOrg">Organisasi / Perusahaan</label>
+          <input type="text" id="contactOrg" class="form-input" placeholder="PT Sukses Bersama" oninput="liveUpdate()" />
+        </div>
+        <div class="form-group">
+          <label for="contactWeb">Website</label>
+          <input type="url" id="contactWeb" class="form-input" placeholder="https://budisantoso.com" oninput="liveUpdate()" />
+        </div>
+      </div>
+
+      <!-- Kustomisasi Warna -->
+      <div class="panel-section-title">🎨 Desain & Warna</div>
+      <div class="color-pickers">
+        <div class="form-group">
+          <label>Warna Utama (QR)</label>
+          <div class="color-input-wrap">
+            <input type="color" id="colorDark" value="#1a1225" onchange="updateColors()" />
+            <span class="color-hex-val" id="hexDark">#1A1225</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Warna Latar (BG)</label>
+          <div class="color-input-wrap">
+            <input type="color" id="colorLight" value="#ffffff" onchange="updateColors()" />
+            <span class="color-hex-val" id="hexLight">#FFFFFF</span>
+          </div>
+        </div>
+      </div>
+      <div class="presets-row">
+        <button class="preset-btn" onclick="applyPreset('#000000', '#ffffff')">🖤 Klasik</button>
+        <button class="preset-btn" onclick="applyPreset('#059669', '#f0fdf4')">💚 Emerald</button>
+        <button class="preset-btn" onclick="applyPreset('#2563eb', '#eff6ff')">💙 Royal Blue</button>
+        <button class="preset-btn" onclick="applyPreset('#ea580c', '#fff7ed')">🧡 Sunset</button>
+        <button class="preset-btn" onclick="applyPreset('#7c3aed', '#faf8ff')">💜 Lavender</button>
+      </div>
+
+      <!-- Kustomisasi Logo -->
+      <div class="panel-section-title">🖼️ Logo Tengah</div>
+      <div class="logo-presets">
+        <button class="logo-preset-btn active" id="logo-none" onclick="setLogoPreset(null)">❌</button>
+        <button class="logo-preset-btn" id="logo-glob" onclick="setLogoPreset('🌐')">🌐</button>
+        <button class="logo-preset-btn" id="logo-wifi" onclick="setLogoPreset('📶')">📶</button>
+        <button class="logo-preset-btn" id="logo-user" onclick="setLogoPreset('👤')">👤</button>
+        <button class="logo-preset-btn" id="logo-mail" onclick="setLogoPreset('✉️')">✉️</button>
+        <button class="logo-preset-btn" id="logo-chat" onclick="setLogoPreset('💬')">💬</button>
+      </div>
+      
+      <div class="upload-box" onclick="document.getElementById('logoUpload').click()" id="uploadBox">
+        <span class="upload-box-text">📂 Upload Logo Custom (.png, .jpg)</span>
+        <span class="upload-box-sub">Logo akan otomatis diposisikan di tengah QR Code</span>
+      </div>
+      <input type="file" id="logoUpload" accept="image/*" style="display:none" onchange="onLogoUpload(this)" />
+      <button class="logo-remove-btn" id="logoRemoveBtn" onclick="removeUploadedLogo()">🗑️ Hapus Logo Custom</button>
+    </div>
+
+    <!-- Right Column: Preview & Download -->
+    <div class="preview-card">
+      <div style="font-size: 14px; font-weight: 800; color: #6b6580; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Space Mono', monospace; margin-bottom: 16px;">Live Preview</div>
+      
+      <div class="qr-preview-container">
+        <canvas id="qrCanvas"></canvas>
+      </div>
+
+      <div class="download-section">
+        <div class="download-format-row">
+          <select id="downloadFormat" class="select-format">
+            <option value="png">Format PNG</option>
+            <option value="jpg">Format JPG</option>
+          </select>
+          <button class="btn-download" onclick="downloadQR()">⬇️ Unduh QR Code</button>
+        </div>
+        <div style="font-size:12px;color:#8b8099;font-weight:700;margin-top:6px;">
+          QR Code beresolusi tinggi (400×400px) siap digunakan.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>Dibuat dengan <span class="ft-heart">❤️</span> oleh <span class="ft-brand">Ali Akbar</span> · Gratis untuk semua orang</p>
+  </footer>
+</div>
+
+<div class="toast" id="toast">✅ QR Code berhasil diperbarui!</div>
+
+<!-- Load Soldair QRCode library from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+<script>
+  let activeType = 'url';
+  let activeLogoPreset = null;
+  let customLogoImage = null;
+
+  function switchType(type) {
+    activeType = type;
+    
+    // Toggle active tab classes
+    document.querySelectorAll('.type-tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`tab-${type}`).classList.add('active');
+
+    // Toggle form fields visibility
+    document.querySelectorAll('.form-section').forEach(sec => sec.classList.remove('active'));
+    document.getElementById(`section-${type}`).classList.add('active');
+
+    // Set default preset logo according to type to look super polished!
+    if (type === 'url') setLogoPreset('🌐');
+    else if (type === 'wifi') setLogoPreset('📶');
+    else if (type === 'contact') setLogoPreset('👤');
+    else setLogoPreset(null);
+
+    liveUpdate();
+  }
+
+  function updateColors() {
+    const cDark = document.getElementById('colorDark').value;
+    const cLight = document.getElementById('colorLight').value;
+    
+    document.getElementById('hexDark').textContent = cDark.toUpperCase();
+    document.getElementById('hexLight').textContent = cLight.toUpperCase();
+
+    liveUpdate();
+  }
+
+  function applyPreset(dark, light) {
+    document.getElementById('colorDark').value = dark;
+    document.getElementById('colorLight').value = light;
+    updateColors();
+  }
+
+  function setLogoPreset(preset) {
+    activeLogoPreset = preset;
+    
+    // Toggle classes
+    document.querySelectorAll('.logo-preset-btn').forEach(btn => btn.classList.remove('active'));
+    
+    if (preset === null) {
+      document.getElementById('logo-none').classList.add('active');
+    } else if (preset === '🌐') {
+      document.getElementById('logo-glob').classList.add('active');
+    } else if (preset === '📶') {
+      document.getElementById('logo-wifi').classList.add('active');
+    } else if (preset === '👤') {
+      document.getElementById('logo-user').classList.add('active');
+    } else if (preset === '✉️') {
+      document.getElementById('logo-mail').classList.add('active');
+    } else if (preset === '💬') {
+      document.getElementById('logo-chat').classList.add('active');
+    }
+
+    // Clear custom uploaded logo when preset is selected
+    if (preset !== null) {
+      customLogoImage = null;
+      document.getElementById('logoRemoveBtn').style.display = 'none';
+      document.getElementById('uploadBox').querySelector('.upload-box-text').textContent = '📂 Upload Logo Custom (.png, .jpg)';
+    }
+
+    liveUpdate();
+  }
+
+  function onLogoUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        customLogoImage = img;
+        activeLogoPreset = null;
+        document.querySelectorAll('.logo-preset-btn').forEach(btn => btn.classList.remove('active'));
+        
+        // Show remove button and update uploader text
+        document.getElementById('logoRemoveBtn').style.display = 'inline-block';
+        document.getElementById('uploadBox').querySelector('.upload-box-text').textContent = `✅ ${file.name}`;
+        
+        liveUpdate();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeUploadedLogo() {
+    customLogoImage = null;
+    document.getElementById('logoUpload').value = '';
+    document.getElementById('logoRemoveBtn').style.display = 'none';
+    document.getElementById('uploadBox').querySelector('.upload-box-text').textContent = '📂 Upload Logo Custom (.png, .jpg)';
+    setLogoPreset(null);
+  }
+
+  function getQRData() {
+    if (activeType === 'url') {
+      let url = document.getElementById('urlInput').value.trim();
+      if (!url) return '';
+      // Quick validation check
+      if (!url.includes(':') && !url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      return url;
+    } else if (activeType === 'text') {
+      return document.getElementById('textInput').value.trim();
+    } else if (activeType === 'wifi') {
+      const ssid = document.getElementById('wifiSSID').value.trim();
+      const pass = document.getElementById('wifiPassword').value.trim();
+      const enc = document.getElementById('wifiEnc').value;
+      const hidden = document.getElementById('wifiHidden').checked ? 'true' : 'false';
+      if (!ssid) return '';
+      return `WIFI:S:${ssid};T:${enc};P:${pass};H:${hidden};;`;
+    } else if (activeType === 'contact') {
+      const fn = document.getElementById('contactFN').value.trim();
+      const ln = document.getElementById('contactLN').value.trim();
+      const tel = document.getElementById('contactTel').value.trim();
+      const email = document.getElementById('contactEmail').value.trim();
+      const org = document.getElementById('contactOrg').value.trim();
+      const web = document.getElementById('contactWeb').value.trim();
+      
+      if (!fn && !ln) return '';
+      
+      return [
+        'BEGIN:VCARD',
+        'VERSION:3.0',
+        `N:${ln};${fn};;;`,
+        `FN:${fn} ${ln}`.trim(),
+        org ? `ORG:${org}` : '',
+        tel ? `TEL;TYPE=CELL:${tel}` : '',
+        email ? `EMAIL:${email}` : '',
+        web ? `URL:${web}` : '',
+        'END:VCARD'
+      ].filter(Boolean).join('\n');
+    }
+    return '';
+  }
+
+  let liveUpdateTimeout = null;
+  function liveUpdate() {
+    clearTimeout(liveUpdateTimeout);
+    liveUpdateTimeout = setTimeout(drawQR, 100);
+  }
+
+  function drawQR() {
+    const data = getQRData();
+    const canvas = document.getElementById('qrCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const cDark = document.getElementById('colorDark').value;
+    const cLight = document.getElementById('colorLight').value;
+
+    if (!data) {
+      // Draw placeholder
+      canvas.width = 240;
+      canvas.height = 240;
+      ctx.fillStyle = cLight;
+      ctx.fillRect(0, 0, 240, 240);
+      
+      ctx.fillStyle = cDark;
+      ctx.font = 'bold 13px Nunito, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Masukkan data untuk', 120, 110);
+      ctx.fillText('membuat QR Code', 120, 130);
+      return;
+    }
+
+    // Generate QR using the Soldair QRCode library
+    QRCode.toCanvas(canvas, data, {
+      width: 400,
+      margin: 2,
+      color: {
+        dark: cDark,
+        light: cLight
+      },
+      errorCorrectionLevel: 'H' // Critical for center logo overlay
+    }, function (error) {
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      // Draw custom logo or preset emoji in the center
+      if (customLogoImage) {
+        const logoSize = canvas.width * 0.22;
+        const x = (canvas.width - logoSize) / 2;
+        const y = (canvas.height - logoSize) / 2;
+
+        // Draw solid background container with rounded border
+        ctx.fillStyle = cLight;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(x - 4, y - 4, logoSize + 8, logoSize + 8, 8);
+        } else {
+          ctx.rect(x - 4, y - 4, logoSize + 8, logoSize + 8);
+        }
+        ctx.fill();
+
+        ctx.drawImage(customLogoImage, x, y, logoSize, logoSize);
+      } else if (activeLogoPreset) {
+        const logoSize = canvas.width * 0.22;
+        const x = (canvas.width - logoSize) / 2;
+        const y = (canvas.height - logoSize) / 2;
+
+        // Draw solid background container circular
+        ctx.fillStyle = cLight;
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, canvas.height / 2, logoSize / 2 + 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw emoji text
+        ctx.font = `${logoSize * 0.70}px Nunito, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(activeLogoPreset, canvas.width / 2, canvas.height / 2 + 1);
+      }
+    });
+  }
+
+  function downloadQR() {
+    const data = getQRData();
+    if (!data) {
+      showToast('Masukkan data terlebih dahulu!');
+      return;
+    }
+
+    const canvas = document.getElementById('qrCanvas');
+    const format = document.getElementById('downloadFormat').value;
+    
+    let imageURL = '';
+    let filename = 'qrcode';
+
+    if (format === 'png') {
+      imageURL = canvas.toDataURL('image/png');
+      filename += '.png';
+    } else if (format === 'jpg') {
+      // For JPG, draw canvas with background to temporary canvas
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tCtx = tempCanvas.getContext('2d');
+      
+      tCtx.fillStyle = '#ffffff'; // Fill white behind
+      tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+      tCtx.drawImage(canvas, 0, 0);
+      
+      imageURL = tempCanvas.toDataURL('image/jpeg', 0.95);
+      filename += '.jpg';
+    }
+
+    const link = document.createElement('a');
+    link.href = imageURL;
+    link.download = filename;
+    link.click();
+
+    showToast('QR Code berhasil diunduh!');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // Pre-fill URL form input and initialize
+  document.getElementById('urlInput').value = 'https://toolbox.id';
+  switchType('url');
+</script>
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <script>
+    (function() {
+      const t = localStorage.getItem('toolboxid-theme');
+      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark-mode');
+        document.addEventListener('DOMContentLoaded', () => document.body.classList.add('dark-mode'));
+      }
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Text Case Converter — ToolboxID</title>
+  <meta name="description" content="Ubah teks ke UPPER, lower, Title, camelCase, snake_case dan banyak lagi. Gratis, instant." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,700;0,800;0,900;1,800;1,900&family=Space+Mono:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Nunito', sans-serif; background: #fefcf7; color: #1a1225; overflow-x: clip; -webkit-font-smoothing: antialiased; }
+    .page { max-width: 880px; margin: 0 auto; padding: 0 32px 80px; }
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 24px 0 20px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-family: 'Space Mono', monospace; font-size: 15px; font-weight: 700; color: #1a1225; text-decoration: none; }
+    .logo-box { width: 36px; height: 36px; background: #1a1225; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; animation: logo3dFlip 6s ease-in-out infinite; box-shadow: 0 4px 12px rgba(255,107,107,.35); }
+    @keyframes logo3dFlip { 0%,30%,100%{transform:rotateY(0deg) scale(1)} 42%,58%{transform:rotateY(180deg) scale(1.1)} }
+    .btn-back { font-family: 'Nunito', sans-serif; font-size: 13.5px; font-weight: 800; padding: 8px 17px; border-radius: 100px; cursor: pointer; transition: background .18s, color .18s; color: #6b6580; background: transparent; border: none; text-decoration: none; }
+    .btn-back:hover { background: #f0ebff; color: #7c3aed; }
+
+    .tool-header { padding: 40px 0 28px; }
+    .tool-header-inner { display: flex; align-items: flex-start; gap: 20px; }
+    .tool-icon-big { width: 68px; height: 68px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 32px; background: #f0fdf4; border: 2.5px solid #bbf7d0; box-shadow: 0 6px 20px rgba(5,150,105,.12); flex-shrink: 0; }
+    .tool-category-badge { display: inline-flex; font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #065f46; background: #f0fdf4; border: 2px solid #bbf7d0; border-radius: 100px; padding: 4px 14px; margin-bottom: 8px; font-family: 'Space Mono', monospace; }
+    .tool-header-text h1 { font-size: clamp(24px, 3.5vw, 34px); font-weight: 900; letter-spacing: -.8px; margin-bottom: 6px; }
+    .tool-header-text p { font-size: 14.5px; color: #6b6580; line-height: 1.7; }
+
+    /* Input card */
+    .input-card { background: #fff; border: 2.5px solid #f0ebff; border-radius: 22px; padding: 24px 28px; margin-bottom: 20px; }
+    .input-label { font-size: 12.5px; font-weight: 800; color: #8b8099; margin-bottom: 8px; display: flex; justify-content: space-between; }
+    .char-count { font-family: 'Space Mono', monospace; font-size: 11.5px; }
+    textarea.main-input { width: 100%; border: 2.5px solid #e8e4f0; border-radius: 14px; outline: none; resize: vertical; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 700; padding: 16px 18px; color: #1a1225; background: #fff; line-height: 1.7; min-height: 120px; transition: border-color .2s, box-shadow .2s; }
+    textarea.main-input:focus { border-color: #a78bfa; box-shadow: 0 0 0 4px rgba(167,139,250,.1); }
+    textarea.main-input::placeholder { color: #c4b9d8; }
+
+    /* Stats row */
+    .stats-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .stat-chip { font-size: 12px; font-weight: 800; padding: 4px 12px; border-radius: 100px; background: #f0fdf4; color: #065f46; border: 1.5px solid #bbf7d0; font-family: 'Space Mono', monospace; }
+
+    /* Case grid */
+    .cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .case-card { background: #fff; border: 2.5px solid #f0ebff; border-radius: 18px; padding: 18px 20px; cursor: pointer; transition: border-color .2s, transform .18s, box-shadow .18s; }
+    .case-card:hover { border-color: #a7f3d0; transform: translateY(-3px); box-shadow: 0 10px 28px rgba(5,150,105,.1); }
+    .case-card-label { font-size: 11.5px; font-weight: 800; color: #059669; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-family: 'Space Mono', monospace; display: flex; justify-content: space-between; align-items: center; }
+    .copy-hint { font-size: 10px; color: #b5aed0; font-family: 'Nunito', sans-serif; letter-spacing: 0; text-transform: none; }
+    .case-card-val { font-size: 14px; font-weight: 800; color: #1a1225; word-break: break-word; line-height: 1.5; min-height: 22px; font-family: 'Space Mono', monospace; }
+    .case-card-val.empty { color: #e2d9f3; font-style: italic; font-family: 'Nunito', sans-serif; font-size: 13px; }
+
+    /* Transform tools */
+    .tools-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+    .tool-btn { font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 13px; padding: 10px 18px; border-radius: 12px; border: 2px solid #e8e4f0; background: #fff; color: #1a1225; cursor: pointer; transition: all .15s; }
+    .tool-btn:hover { background: #f0fdf4; border-color: #a7f3d0; color: #059669; }
+    .tool-btn.green { background: #059669; color: #fff; border-color: transparent; box-shadow: 0 4px 0 #065f46; }
+    .tool-btn.green:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #065f46; }
+    .tool-btn.danger { border-color: #fecaca; color: #ef4444; }
+    .tool-btn.danger:hover { background: #fef2f2; }
+
+    /* Find replace */
+    .find-replace-card { background: #fff; border: 2.5px solid #f0ebff; border-radius: 18px; padding: 20px 24px; margin-bottom: 20px; }
+    .fr-title { font-size: 13px; font-weight: 900; color: #6b6580; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 1px; font-family: 'Space Mono', monospace; }
+    .fr-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+    .fr-inp { flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 5px; }
+    .fr-inp label { font-size: 12px; font-weight: 800; color: #b5aed0; }
+    .fr-inp input { font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; padding: 10px 14px; border: 2px solid #e8e4f0; border-radius: 12px; outline: none; color: #1a1225; }
+    .fr-inp input:focus { border-color: #a78bfa; }
+
+    .toast { position: fixed; bottom: 28px; right: 28px; background: #1a1225; color: #fff; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; padding: 14px 22px; border-radius: 14px; box-shadow: 0 12px 40px rgba(26,18,37,.3); z-index: 9999; display: flex; align-items: center; gap: 10px; transform: translateY(80px); opacity: 0; transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .3s; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .footer { text-align: center; padding: 24px 0 0; border-top: 2px dashed #f0ebff; margin-top: 32px; }
+    .footer p { font-size: 13px; color: #c4b9d8; font-weight: 700; }
+    .ft-heart { color: #ff6b6b; } .ft-brand { color: #7c3aed; font-weight: 900; }
+
+    @media (max-width: 600px) { .page { padding: 0 16px 60px; } .cases-grid { grid-template-columns: 1fr; } }
+  
+    /* ── Dark Mode Overrides ── */
+    html.dark-mode body, body.dark-mode { background: #120c1a !important; color: #e2daf0 !important; }
+    .dark-mode nav .logo { color: #e2daf0 !important; }
+    .dark-mode nav .logo-box { background: #2b1f3d !important; }
+    .dark-mode .btn-back { color: #a59cb5 !important; }
+    .dark-mode .btn-back:hover { background: #2b223d !important; color: #c084fc !important; }
+    .dark-mode .tool-header-text h1 { color: #fff !important; }
+    .dark-mode .tool-header-text p { color: #a59cb5 !important; }
+    .dark-mode .main-card, .dark-mode .result-card, .dark-mode .file-list-card, .dark-mode .preview-card, .dark-mode .history-card, .dark-mode .editor-box, .dark-mode .preview-box, .dark-mode .output-box, .dark-mode .tool-panel { background: #1d162a !important; border-color: #2b223d !important; color: #e2daf0 !important; }
+    .dark-mode input, .dark-mode textarea, .dark-mode select { background: #120c1a !important; border-color: #2b223d !important; color: #fff !important; }
+    .dark-mode .footer { border-top-color: #2b223d !important; }
+    .dark-mode .footer p, .dark-mode .footer p span { color: #6b607a !important; }
+    .dark-mode .file-item, .dark-mode .item-row { background: #120c1a !important; border-color: #2b223d !important; }
+    .dark-mode .file-name, .dark-mode .item-name { color: #fff !important; }
+    .dark-mode .action-btn { background: #1d162a !important; border-color: #2b223d !important; color: #a59cb5 !important; }
+    .dark-mode .action-btn:hover { border-color: #7c3aed !important; color: #c084fc !important; background: #2b223d !important; }
+    .dark-mode .toast { background: #2b223d !important; border: 1.5px solid #7c3aed !important; color: #fff !important; }
+    .dark-mode .option-group label { color: #a59cb5 !important; }
+</style>
+  <link rel="icon" href="../favicon.png" type="image/png" />
+</head>
+<body>
+<div class="page">
+  <nav>
+    <a class="logo" href="../index.html#tools-section"><div class="logo-box"><img src="../logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" /></div><span>ToolboxID</span></a>
+    <a class="btn-back" href="../index.html#tools-section">← Kembali</a>
+  </nav>
+
+  <div class="tool-header">
+    <div class="tool-header-inner">
+      <div class="tool-icon-big">✂️</div>
+      <div class="tool-header-text">
+        <div class="tool-category-badge">✂️ Teks</div>
+        <h1>Text Case Converter</h1>
+        <p>Ubah teks ke berbagai format: UPPER, lower, Title, camelCase, PascalCase, snake_case, kebab-case, dan lainnya.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-card">
+    <div class="input-label">
+      <span>Masukkan teks</span>
+      <span class="char-count" id="charCount">0 karakter · 0 kata · 0 baris</span>
+    </div>
+    <textarea class="main-input" id="mainInput" placeholder="Ketik atau paste teks di sini..." oninput="onInput()"></textarea>
+    <div class="stats-chips" id="statsChips" style="display:none">
+      <span class="stat-chip" id="sc1">—</span>
+      <span class="stat-chip" id="sc2">—</span>
+      <span class="stat-chip" id="sc3">—</span>
+      <span class="stat-chip" id="sc4">—</span>
+    </div>
+  </div>
+
+  <!-- Quick tools -->
+  <div class="tools-row">
+    <button class="tool-btn green" id="copy-all-btn" onclick="copyInput()">📋 Copy Teks</button>
+    <button class="tool-btn" onclick="trimText()">✂️ Trim Whitespace</button>
+    <button class="tool-btn" onclick="removeExtraSpaces()">🔧 Hapus Spasi Ganda</button>
+    <button class="tool-btn" onclick="reverseText()">↩ Balik Teks</button>
+    <button class="tool-btn" onclick="sortLines()">📋 Sort Baris A→Z</button>
+    <button class="tool-btn danger" onclick="clearInput()">🗑️ Clear</button>
+  </div>
+
+  <!-- Cases Grid -->
+  <div class="cases-grid" id="casesGrid"></div>
+
+  <!-- Find & Replace -->
+  <div class="find-replace-card">
+    <div class="fr-title">🔍 Find & Replace</div>
+    <div class="fr-row">
+      <div class="fr-inp">
+        <label>Cari</label>
+        <input type="text" id="frFind" placeholder="Teks yang dicari..." />
+      </div>
+      <div class="fr-inp">
+        <label>Ganti dengan</label>
+        <input type="text" id="frReplace" placeholder="Teks pengganti..." />
+      </div>
+      <button class="tool-btn" style="padding:10px 20px" onclick="findReplace()">🔄 Ganti Semua</button>
+    </div>
+  </div>
+
+  <footer class="footer"><p>Dibuat dengan <span class="ft-heart">❤️</span> oleh <span class="ft-brand">Ali Akbar</span> · Gratis untuk semua orang</p></footer>
+</div>
+<div class="toast" id="toast"><span id="toastEmoji">✅</span><span id="toastMsg">Done!</span></div>
+
+<script>
+  const CASES = [
+    { id: 'upper',   label: 'UPPERCASE',     fn: t => t.toUpperCase() },
+    { id: 'lower',   label: 'lowercase',     fn: t => t.toLowerCase() },
+    { id: 'title',   label: 'Title Case',    fn: t => t.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase()) },
+    { id: 'sentence',label: 'Sentence case', fn: t => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() },
+    { id: 'camel',   label: 'camelCase',     fn: t => t.replace(/(?:^\w|[A-Z]|\b\w|\s+\w)/g, (m,i) => i===0 ? m.trim().toLowerCase() : m.trim().toUpperCase()).replace(/\s+/g,'').replace(/^./,c=>c.toLowerCase()) },
+    { id: 'pascal',  label: 'PascalCase',    fn: t => t.replace(/(?:^\w|[A-Z]|\b\w|\s+\w)/g, m => m.trim().toUpperCase()).replace(/\s+/g,'') },
+    { id: 'snake',   label: 'snake_case',    fn: t => t.trim().replace(/\s+/g,'_').replace(/[A-Z]/g, c=>'_'+c).replace(/^_/,'').toLowerCase().replace(/__+/g,'_') },
+    { id: 'kebab',   label: 'kebab-case',    fn: t => t.trim().replace(/\s+/g,'-').replace(/[A-Z]/g,c=>'-'+c).replace(/^-/,'').toLowerCase().replace(/--+/g,'-') },
+    { id: 'constant',label: 'CONSTANT_CASE', fn: t => t.trim().replace(/\s+/g,'_').toUpperCase().replace(/__+/g,'_') },
+    { id: 'dot',     label: 'dot.case',      fn: t => t.trim().replace(/\s+/g,'.').toLowerCase() },
+    { id: 'path',    label: 'path/case',     fn: t => t.trim().replace(/\s+/g,'/').toLowerCase() },
+    { id: 'swap',    label: 'sWaP cAsE',     fn: t => t.split('').map(c=>c===c.toUpperCase()?c.toLowerCase():c.toUpperCase()).join('') },
+    { id: 'alt',     label: 'AlTeRnAtInG',   fn: t => t.split('').map((c,i)=>i%2===0?c.toUpperCase():c.toLowerCase()).join('') },
+    { id: 'reverse', label: 'esreveR',        fn: t => t.split('').reverse().join('') },
+    { id: 'slug',    label: 'url-slug',      fn: t => t.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-') },
+    { id: 'hash',    label: '#hashtag',      fn: t => t.trim().split(/\s+/).map(w=>'#'+w.toLowerCase().replace(/[^a-z0-9]/g,'')).join(' ') },
+  ];
+
+  function buildGrid() {
+    const grid = document.getElementById('casesGrid');
+    grid.innerHTML = CASES.map(c => `
+      <div class="case-card" id="card-${c.id}" onclick="copyCase('${c.id}')">
+        <div class="case-card-label">${c.label}<span class="copy-hint">Klik copy</span></div>
+        <div class="case-card-val empty" id="val-${c.id}">Ketik teks di atas...</div>
+      </div>`).join('');
+  }
+
+  function onInput() {
+    const text = document.getElementById('mainInput').value;
+    const chars = text.length;
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const lines = text.split('\n').length;
+    const sentences = text.split(/[.!?]+/).filter(s=>s.trim()).length;
+
+    document.getElementById('charCount').textContent = `${chars} karakter · ${words} kata · ${lines} baris`;
+
+    if (chars > 0) {
+      document.getElementById('statsChips').style.display = 'flex';
+      document.getElementById('sc1').textContent = `${chars} karakter`;
+      document.getElementById('sc2').textContent = `${words} kata`;
+      document.getElementById('sc3').textContent = `${lines} baris`;
+      document.getElementById('sc4').textContent = `${sentences} kalimat`;
+    } else {
+      document.getElementById('statsChips').style.display = 'none';
+    }
+
+    CASES.forEach(c => {
+      const el = document.getElementById('val-'+c.id);
+      if (text.trim()) {
+        el.textContent = c.fn(text);
+        el.classList.remove('empty');
+      } else {
+        el.textContent = 'Ketik teks di atas...';
+        el.classList.add('empty');
+      }
+    });
+  }
+
+  function copyCase(id) {
+    const val = document.getElementById('val-'+id).textContent;
+    if (!val || val === 'Ketik teks di atas...') { showToast('⚠️', 'Tidak ada teks untuk di-copy!'); return; }
+    navigator.clipboard.writeText(val).then(() => {
+      const card = document.getElementById('card-'+id);
+      const origBorder = card.style.borderColor;
+      card.style.borderColor = '#059669';
+      setTimeout(() => card.style.borderColor = origBorder, 1200);
+      showToast('✅', 'Berhasil di-copy!');
+    });
+  }
+
+  function copyInput() { navigator.clipboard.writeText(document.getElementById('mainInput').value).then(() => showToast('✅', 'Teks di-copy!')); }
+
+  function trimText() {
+    const ta = document.getElementById('mainInput');
+    ta.value = ta.value.trim();
+    onInput();
+    showToast('✂️', 'Whitespace dihapus!');
+  }
+
+  function removeExtraSpaces() {
+    const ta = document.getElementById('mainInput');
+    ta.value = ta.value.replace(/\s+/g, ' ').trim();
+    onInput();
+    showToast('🔧', 'Spasi ganda dihapus!');
+  }
+
+  function reverseText() {
+    const ta = document.getElementById('mainInput');
+    ta.value = ta.value.split('').reverse().join('');
+    onInput();
+    showToast('↩', 'Teks dibalik!');
+  }
+
+  function sortLines() {
+    const ta = document.getElementById('mainInput');
+    ta.value = ta.value.split('\n').sort((a,b) => a.localeCompare(b, 'id')).join('\n');
+    onInput();
+    showToast('📋', 'Baris diurutkan A→Z!');
+  }
+
+  function clearInput() {
+    document.getElementById('mainInput').value = '';
+    onInput();
+  }
+
+  function findReplace() {
+    const find = document.getElementById('frFind').value;
+    const replace = document.getElementById('frReplace').value;
+    if (!find) { showToast('⚠️', 'Masukkan teks yang dicari!'); return; }
+    const ta = document.getElementById('mainInput');
+    const count = (ta.value.match(new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g')) || []).length;
+    ta.value = ta.value.replaceAll(find, replace);
+    onInput();
+    showToast('🔄', `${count} kata diganti!`);
+  }
+
+  function showToast(emoji, msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastEmoji').textContent = emoji;
+    document.getElementById('toastMsg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  buildGrid();
+</script>
+</body>
+</html>

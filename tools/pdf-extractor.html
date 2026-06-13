@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <script>
+    (function() {
+      const t = localStorage.getItem('toolboxid-theme');
+      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark-mode');
+        document.addEventListener('DOMContentLoaded', () => document.body.classList.add('dark-mode'));
+      }
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Image Extractor — ToolboxID</title>
+  <meta name="description" content="Extract semua gambar dari file PDF langsung di browser. Gratis, tanpa upload ke server." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,700;0,800;0,900;1,800;1,900&family=Space+Mono:wght@700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Nunito', sans-serif; background: #fefcf7; color: #1a1225; overflow-x: clip; -webkit-font-smoothing: antialiased; }
+    .page { max-width: 980px; margin: 0 auto; padding: 0 32px 80px; }
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 24px 0 20px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-family: 'Space Mono', monospace; font-size: 15px; font-weight: 700; color: #1a1225; text-decoration: none; }
+    .logo-box { width: 36px; height: 36px; background: #1a1225; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; animation: logo3dFlip 6s ease-in-out infinite; box-shadow: 0 4px 12px rgba(255,107,107,.35); }
+    @keyframes logo3dFlip { 0%,30%,100%{transform:rotateY(0deg) scale(1)} 42%,58%{transform:rotateY(180deg) scale(1.1)} }
+    .btn-back { font-family: 'Nunito', sans-serif; font-size: 13.5px; font-weight: 800; padding: 8px 17px; border-radius: 100px; cursor: pointer; color: #6b6580; background: transparent; border: none; text-decoration: none; transition: background .18s, color .18s; }
+    .btn-back:hover { background: #f0ebff; color: #7c3aed; }
+
+    .tool-header { padding: 40px 0 28px; }
+    .tool-header-inner { display: flex; align-items: flex-start; gap: 20px; }
+    .tool-icon-big { width: 68px; height: 68px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 32px; background: #f0fdf4; border: 2.5px solid #bbf7d0; box-shadow: 0 6px 20px rgba(16,185,129,.12); flex-shrink: 0; }
+    .tool-category-badge { display: inline-flex; font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #065f46; background: #f0fdf4; border: 2px solid #bbf7d0; border-radius: 100px; padding: 4px 14px; margin-bottom: 8px; font-family: 'Space Mono', monospace; }
+    .tool-header-text h1 { font-size: clamp(24px, 3.5vw, 34px); font-weight: 900; letter-spacing: -.8px; margin-bottom: 6px; }
+    .tool-header-text p { font-size: 14.5px; color: #6b6580; line-height: 1.7; }
+
+    /* Upload */
+    .upload-zone { border: 3px dashed #bbf7d0; border-radius: 20px; background: #f0fdf4; padding: 48px 24px; text-align: center; cursor: pointer; transition: all .2s; margin-bottom: 20px; }
+    .upload-zone:hover, .upload-zone.drag { border-color: #059669; background: #dcfce7; }
+    .upload-zone .up-icon { font-size: 48px; display: block; margin-bottom: 14px; }
+    .upload-zone h3 { font-size: 16px; font-weight: 900; margin-bottom: 6px; }
+    .upload-zone p { font-size: 13px; color: #8b8099; }
+    .upload-zone p span { color: #059669; font-weight: 800; }
+    input[type=file] { display: none; }
+
+    /* Settings card */
+    .settings-card { background: #fff; border: 2.5px solid #f0ebff; border-radius: 20px; padding: 22px 28px; margin-bottom: 24px; display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
+    .setting-item { display: flex; flex-direction: column; gap: 6px; }
+    .setting-item label { font-size: 12.5px; font-weight: 800; color: #8b8099; }
+    select.opt { font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; padding: 10px 14px; border: 2.5px solid #e8e4f0; border-radius: 12px; background: #fff; color: #1a1225; outline: none; cursor: pointer; }
+    select.opt:focus { border-color: #a78bfa; }
+    .scale-wrap { display: flex; align-items: center; gap: 8px; }
+    .scale-val { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; color: #059669; background: #f0fdf4; padding: 3px 10px; border-radius: 8px; }
+    input[type=range] { width: 140px; height: 8px; appearance: none; background: #e8e4f0; border-radius: 100px; outline: none; cursor: pointer; }
+    input[type=range]::-webkit-slider-thumb { appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #059669; box-shadow: 0 2px 8px rgba(5,150,105,.4); cursor: grab; }
+
+    /* Progress */
+    .progress-wrap { display: none; background: #fff; border: 2.5px solid #f0ebff; border-radius: 18px; padding: 22px 26px; margin-bottom: 20px; }
+    .progress-text { font-size: 14px; font-weight: 800; color: #6b6580; margin-bottom: 10px; display: flex; justify-content: space-between; }
+    .progress-bar-track { height: 12px; background: #f0ebff; border-radius: 100px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #059669, #34d399); border-radius: 100px; transition: width .3s ease; }
+
+    /* Stats */
+    .stats-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; display: none; }
+    .stat-chip { font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 100px; background: #f0fdf4; color: #065f46; border: 1.5px solid #bbf7d0; }
+
+    /* Image grid */
+    .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .img-card { background: #fff; border: 2.5px solid #f0ebff; border-radius: 16px; overflow: hidden; cursor: pointer; transition: transform .2s, box-shadow .2s; }
+    .img-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(5,150,105,.12); border-color: #a7f3d0; }
+    .img-card canvas, .img-card img { width: 100%; display: block; background: repeating-conic-gradient(#f0ebff 0% 25%, #fff 0% 50%) 0 0 / 10px 10px; }
+    .img-card-footer { padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
+    .img-num { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; color: #b5aed0; }
+    .img-dl-btn { font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 8px; border: 1.5px solid #bbf7d0; background: #f0fdf4; color: #059669; cursor: pointer; transition: background .15s; }
+    .img-dl-btn:hover { background: #dcfce7; }
+
+    /* Modal lightbox */
+    .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 10000; align-items: center; justify-content: center; }
+    .lightbox.open { display: flex; }
+    .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 16px; object-fit: contain; }
+    .lightbox-close { position: absolute; top: 20px; right: 24px; font-size: 28px; color: #fff; cursor: pointer; background: rgba(255,255,255,.15); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+
+    /* Buttons */
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn-action { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 14px; padding: 13px 24px; border-radius: 14px; border: none; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+    .btn-action.green { background: #059669; color: #fff; box-shadow: 0 5px 0 #065f46; }
+    .btn-action.green:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #065f46; }
+    .btn-action.outline { background: #fff; color: #1a1225; border: 2.5px solid #e8e4f0; box-shadow: 0 4px 0 #e8e4f0; }
+    .btn-action.outline:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #e8e4f0; }
+
+    .toast { position: fixed; bottom: 28px; right: 28px; background: #1a1225; color: #fff; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; padding: 14px 22px; border-radius: 14px; box-shadow: 0 12px 40px rgba(26,18,37,.3); z-index: 9999; display: flex; align-items: center; gap: 10px; transform: translateY(80px); opacity: 0; transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .3s; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .footer { text-align: center; padding: 24px 0 0; border-top: 2px dashed #f0ebff; margin-top: 32px; }
+    .footer p { font-size: 13px; color: #c4b9d8; font-weight: 700; }
+    .ft-heart { color: #ff6b6b; } .ft-brand { color: #7c3aed; font-weight: 900; }
+
+    @media (max-width: 620px) { .page { padding: 0 16px 60px; } .image-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }
+  
+    /* ── Dark Mode Overrides ── */
+    html.dark-mode body, body.dark-mode { background: #120c1a !important; color: #e2daf0 !important; }
+    .dark-mode nav .logo { color: #e2daf0 !important; }
+    .dark-mode nav .logo-box { background: #2b1f3d !important; }
+    .dark-mode .btn-back { color: #a59cb5 !important; }
+    .dark-mode .btn-back:hover { background: #2b223d !important; color: #c084fc !important; }
+    .dark-mode .tool-header-text h1 { color: #fff !important; }
+    .dark-mode .tool-header-text p { color: #a59cb5 !important; }
+    .dark-mode .main-card, .dark-mode .result-card, .dark-mode .file-list-card, .dark-mode .preview-card, .dark-mode .history-card, .dark-mode .editor-box, .dark-mode .preview-box, .dark-mode .output-box, .dark-mode .tool-panel { background: #1d162a !important; border-color: #2b223d !important; color: #e2daf0 !important; }
+    .dark-mode input, .dark-mode textarea, .dark-mode select { background: #120c1a !important; border-color: #2b223d !important; color: #fff !important; }
+    .dark-mode .footer { border-top-color: #2b223d !important; }
+    .dark-mode .footer p, .dark-mode .footer p span { color: #6b607a !important; }
+    .dark-mode .file-item, .dark-mode .item-row { background: #120c1a !important; border-color: #2b223d !important; }
+    .dark-mode .file-name, .dark-mode .item-name { color: #fff !important; }
+    .dark-mode .action-btn { background: #1d162a !important; border-color: #2b223d !important; color: #a59cb5 !important; }
+    .dark-mode .action-btn:hover { border-color: #7c3aed !important; color: #c084fc !important; background: #2b223d !important; }
+    .dark-mode .toast { background: #2b223d !important; border: 1.5px solid #7c3aed !important; color: #fff !important; }
+    .dark-mode .option-group label { color: #a59cb5 !important; }
+</style>
+  <link rel="icon" href="../favicon.png" type="image/png" />
+</head>
+<body>
+<div class="page">
+  <nav>
+    <a class="logo" href="../index.html#tools-section"><div class="logo-box"><img src="../logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" /></div><span>ToolboxID</span></a>
+    <a class="btn-back" href="../index.html#tools-section">← Kembali</a>
+  </nav>
+
+  <div class="tool-header">
+    <div class="tool-header-inner">
+      <div class="tool-icon-big">📄</div>
+      <div class="tool-header-text">
+        <div class="tool-category-badge">📄 PDF · File</div>
+        <h1>PDF Image Extractor</h1>
+        <p>Extract semua gambar dari file PDF — setiap halaman dirender sebagai gambar. Langsung di browser, data tidak dikirim ke server.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload -->
+  <div class="upload-zone" id="uploadZone" onclick="document.getElementById('pdfInput').click()" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+    <span class="up-icon">📄</span>
+    <h3>Drop file PDF di sini</h3>
+    <p>atau <span>klik untuk pilih file PDF</span></p>
+  </div>
+  <input type="file" id="pdfInput" accept=".pdf,application/pdf" onchange="onFileSelect(this)" />
+
+  <!-- Settings -->
+  <div class="settings-card" id="settingsCard" style="display:none">
+    <div class="setting-item">
+      <label>Resolusi (Scale)</label>
+      <div class="scale-wrap">
+        <input type="range" id="scaleSlider" min="1" max="4" step="0.5" value="2" oninput="document.getElementById('scaleVal').textContent=this.value+'x'" />
+        <span class="scale-val" id="scaleVal">2x</span>
+      </div>
+    </div>
+    <div class="setting-item">
+      <label>Format Output</label>
+      <select class="opt" id="fmtSelect">
+        <option value="image/jpeg">JPEG</option>
+        <option value="image/png" selected>PNG</option>
+        <option value="image/webp">WEBP</option>
+      </select>
+    </div>
+    <div class="setting-item">
+      <label>Halaman</label>
+      <select class="opt" id="pagesSelect">
+        <option value="all">Semua Halaman</option>
+        <option value="range">Pilih Range</option>
+      </select>
+    </div>
+    <div class="setting-item" id="rangeWrap" style="display:none">
+      <label>Range (mis: 1-5)</label>
+      <input type="text" id="rangeInput" placeholder="1-5" style="font-family:'Space Mono',monospace;font-size:14px;padding:10px 14px;border:2.5px solid #e8e4f0;border-radius:12px;outline:none;width:100px;" />
+    </div>
+    <button class="btn-action green" style="align-self:flex-end" id="extract-btn" onclick="extractPages()">⚡ Extract</button>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-text">
+      <span id="progressText">Memproses...</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow">
+    <span class="stat-chip" id="sc1">—</span>
+    <span class="stat-chip" id="sc2">—</span>
+    <span class="stat-chip" id="sc3">—</span>
+  </div>
+
+  <!-- Actions -->
+  <div class="btn-row" id="actionRow" style="display:none;margin-bottom:20px">
+    <button class="btn-action green" id="dl-all-btn" onclick="downloadAll()">⬇️ Download Semua</button>
+    <button class="btn-action outline" onclick="clearAll()">🗑️ Clear</button>
+  </div>
+
+  <!-- Image grid -->
+  <div class="image-grid" id="imageGrid"></div>
+
+  <footer class="footer"><p>Dibuat dengan <span class="ft-heart">❤️</span> oleh <span class="ft-brand">Ali Akbar</span> · Gratis untuk semua orang</p></footer>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <div class="lightbox-close" onclick="closeLightbox()">✕</div>
+  <img id="lightboxImg" src="" alt="Preview" />
+</div>
+
+<div class="toast" id="toast"><span id="toastEmoji">✅</span><span id="toastMsg">Done!</span></div>
+
+<script>
+  // Set PDF.js worker
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  let pdfDoc = null;
+  let fileName = '';
+  const extractedPages = [];
+
+  function onFileSelect(input) {
+    const file = input.files[0];
+    if (!file) return;
+    loadPDF(file);
+  }
+
+  function loadPDF(file) {
+    fileName = file.name.replace(/\.pdf$/i, '');
+    showToast('📄', `Memuat ${file.name}...`);
+
+    const reader = new FileReader();
+    reader.onload = e => {
+      const typedArray = new Uint8Array(e.target.result);
+      pdfjsLib.getDocument(typedArray).promise.then(doc => {
+        pdfDoc = doc;
+        document.getElementById('settingsCard').style.display = 'flex';
+        document.getElementById('sc1').textContent = `📄 ${doc.numPages} halaman`;
+        document.getElementById('sc2').textContent = `📁 ${formatBytes(file.size)}`;
+        document.getElementById('sc3').textContent = `📝 ${file.name}`;
+        document.getElementById('statsRow').style.display = 'flex';
+        showToast('✅', `${file.name} siap! ${doc.numPages} halaman ditemukan.`);
+      }).catch(err => {
+        showToast('❌', 'Gagal memuat PDF. Pastikan file valid.');
+        console.error(err);
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  document.getElementById('pagesSelect').addEventListener('change', e => {
+    document.getElementById('rangeWrap').style.display = e.target.value === 'range' ? 'block' : 'none';
+  });
+
+  async function extractPages() {
+    if (!pdfDoc) return;
+    const scale = parseFloat(document.getElementById('scaleSlider').value);
+    const fmt = document.getElementById('fmtSelect').value;
+    const ext = fmt === 'image/jpeg' ? 'jpg' : fmt === 'image/webp' ? 'webp' : 'png';
+    const pagesMode = document.getElementById('pagesSelect').value;
+
+    let pageNums = [];
+    if (pagesMode === 'all') {
+      for (let i = 1; i <= pdfDoc.numPages; i++) pageNums.push(i);
+    } else {
+      const rangeStr = document.getElementById('rangeInput').value.trim();
+      const parts = rangeStr.split('-');
+      const start = parseInt(parts[0]) || 1;
+      const end = parseInt(parts[1]) || pdfDoc.numPages;
+      for (let i = start; i <= Math.min(end, pdfDoc.numPages); i++) pageNums.push(i);
+    }
+
+    extractedPages.length = 0;
+    document.getElementById('imageGrid').innerHTML = '';
+    document.getElementById('progressWrap').style.display = 'block';
+    document.getElementById('actionRow').style.display = 'none';
+
+    for (let i = 0; i < pageNums.length; i++) {
+      const pageNum = pageNums[i];
+      const pct = Math.round(((i) / pageNums.length) * 100);
+      document.getElementById('progressBar').style.width = pct + '%';
+      document.getElementById('progressPct').textContent = pct + '%';
+      document.getElementById('progressText').textContent = `Memproses halaman ${pageNum} dari ${pageNums[pageNums.length-1]}...`;
+
+      const page = await pdfDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      const q = fmt === 'image/png' ? 1 : 0.9;
+      const dataURL = canvas.toDataURL(fmt, q);
+      const name = `${fileName}_page${String(pageNum).padStart(3,'0')}.${ext}`;
+      extractedPages.push({ dataURL, name });
+
+      // Add to grid
+      const card = document.createElement('div');
+      card.className = 'img-card';
+      const img = document.createElement('img');
+      img.src = dataURL; img.alt = `Halaman ${pageNum}`;
+      img.style.maxHeight = '180px'; img.style.objectFit = 'contain';
+      img.onclick = () => openLightbox(dataURL);
+      card.appendChild(img);
+      card.innerHTML += `
+        <div class="img-card-footer">
+          <span class="img-num">Hal. ${pageNum}</span>
+          <button class="img-dl-btn" onclick="event.stopPropagation();downloadPage(${extractedPages.length-1})">⬇️ DL</button>
+        </div>`;
+      document.getElementById('imageGrid').appendChild(card);
+    }
+
+    document.getElementById('progressBar').style.width = '100%';
+    document.getElementById('progressPct').textContent = '100%';
+    document.getElementById('progressText').textContent = `✅ Selesai! ${pageNums.length} halaman diekstrak.`;
+    document.getElementById('actionRow').style.display = 'flex';
+    showToast('🎉', `${pageNums.length} halaman berhasil diekstrak!`);
+  }
+
+  function downloadPage(idx) {
+    const { dataURL, name } = extractedPages[idx];
+    const a = document.createElement('a'); a.href = dataURL; a.download = name; a.click();
+    showToast('⬇️', `${name} didownload!`);
+  }
+
+  function downloadAll() {
+    if (!extractedPages.length) return;
+    extractedPages.forEach(({ dataURL, name }, i) => {
+      setTimeout(() => { const a = document.createElement('a'); a.href = dataURL; a.download = name; a.click(); }, i * 200);
+    });
+    showToast('⬇️', `Mendownload ${extractedPages.length} gambar...`);
+  }
+
+  function clearAll() {
+    pdfDoc = null; extractedPages.length = 0; fileName = '';
+    document.getElementById('pdfInput').value = '';
+    document.getElementById('imageGrid').innerHTML = '';
+    document.getElementById('settingsCard').style.display = 'none';
+    document.getElementById('progressWrap').style.display = 'none';
+    document.getElementById('actionRow').style.display = 'none';
+    document.getElementById('statsRow').style.display = 'none';
+  }
+
+  function openLightbox(src) {
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('lightbox').classList.add('open');
+  }
+  function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+
+  function onDragOver(e) { e.preventDefault(); document.getElementById('uploadZone').classList.add('drag'); }
+  function onDragLeave() { document.getElementById('uploadZone').classList.remove('drag'); }
+  function onDrop(e) {
+    e.preventDefault(); document.getElementById('uploadZone').classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') loadPDF(file);
+    else showToast('⚠️', 'Hanya file PDF yang didukung!');
+  }
+
+  function formatBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+    return (b/1024/1024).toFixed(2) + ' MB';
+  }
+
+  function showToast(emoji, msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastEmoji').textContent = emoji;
+    document.getElementById('toastMsg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), 3500);
+  }
+</script>
+</body>
+</html>

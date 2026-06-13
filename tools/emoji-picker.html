@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <script>
+    (function() {
+      const t = localStorage.getItem('toolboxid-theme');
+      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark-mode');
+        document.addEventListener('DOMContentLoaded', () => document.body.classList.add('dark-mode'));
+      }
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emoji Picker — ToolboxID</title>
+  <meta name="description" content="Cari, pilih, dan salin emoji dengan cepat. Mendukung penyalinan langsung, keranjang multi-emoji, dan pencarian instan secara offline." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,700;0,800;0,900;1,800;1,900&family=Space+Mono:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Nunito', sans-serif; background: #fefcf7; color: #1a1225; overflow-x: clip; -webkit-font-smoothing: antialiased; }
+    .page { max-width: 900px; margin: 0 auto; padding: 0 32px 80px; }
+
+    /* ── Navbar ── */
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 24px 0 20px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-family: 'Space Mono', monospace; font-size: 15px; font-weight: 700; color: #1a1225; text-decoration: none; }
+    .logo-box { width: 36px; height: 36px; background: #1a1225; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; animation: logo3dFlip 6s ease-in-out infinite; box-shadow: 0 4px 12px rgba(255,107,107,.35); }
+    @keyframes logo3dFlip { 0%,30%,100%{transform:rotateY(0deg) scale(1)} 42%,58%{transform:rotateY(180deg) scale(1.1)} }
+    .btn-back { font-family: 'Nunito', sans-serif; font-size: 13.5px; font-weight: 800; padding: 8px 17px; border-radius: 100px; cursor: pointer; transition: background .18s, color .18s; color: #6b6580; background: transparent; border: none; text-decoration: none; }
+    .btn-back:hover { background: #f0ebff; color: #7c3aed; }
+
+    /* ── Tool Header ── */
+    .tool-header { padding: 40px 0 28px; }
+    .tool-header-inner { display: flex; align-items: flex-start; gap: 20px; }
+    .tool-icon-big { width: 68px; height: 68px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 32px; background: #fefce8; border: 2.5px solid #fef08a; box-shadow: 0 6px 20px rgba(234,179,8,.12); flex-shrink: 0; animation: iconBounce .6s cubic-bezier(.34,1.56,.64,1) both; }
+    @keyframes iconBounce { from{opacity:0;transform:scale(.5) rotate(-15deg)} to{opacity:1;transform:scale(1) rotate(0deg)} }
+    .tool-category-badge { display: inline-flex; font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #a16207; background: #fefce8; border: 2px solid #fef08a; border-radius: 100px; padding: 4px 14px; margin-bottom: 8px; font-family: 'Space Mono', monospace; }
+    .tool-header-text h1 { font-size: clamp(24px, 3.5vw, 34px); font-weight: 900; letter-spacing: -.8px; margin-bottom: 6px; animation: fadeUp .5s cubic-bezier(.22,1,.36,1) .1s both; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+    .tool-header-text p { font-size: 14.5px; color: #6b6580; line-height: 1.7; animation: fadeUp .5s cubic-bezier(.22,1,.36,1) .18s both; }
+
+    /* ── Search Bar ── */
+    .search-wrapper { position: relative; margin-bottom: 24px; animation: fadeUp .5s cubic-bezier(.22,1,.36,1) .22s both; }
+    .search-input { width: 100%; font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 700; padding: 15px 20px 15px 48px; border: 2.5px solid #e8e4f0; border-radius: 16px; background: #fff; color: #1a1225; outline: none; transition: border-color .2s, box-shadow .2s; }
+    .search-input:focus { border-color: #fde047; box-shadow: 0 0 0 4px rgba(253,224,71,.22); }
+    .search-input::placeholder { color: #c4b9d8; }
+    .search-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); font-size: 18px; pointer-events: none; color: #b5aed0; }
+
+    /* ── Category Tabs ── */
+    .category-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 24px; scrollbar-width: none; -ms-overflow-style: none; animation: fadeUp .5s cubic-bezier(.22,1,.36,1) .25s both; }
+    .category-tabs::-webkit-scrollbar { display: none; }
+    .tab-btn { font-family: 'Nunito', sans-serif; font-size: 13.5px; font-weight: 800; border: 2.5px solid #e8e4f0; background: #fff; padding: 8px 16px; border-radius: 12px; cursor: pointer; color: #6b6580; transition: all .15s; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+    .tab-btn:hover { border-color: #fde047; background: #fefce8; color: #854d0e; }
+    .tab-btn.active { background: #fefce8; border-color: #fde047; color: #854d0e; box-shadow: 0 4px 10px rgba(253,224,71,0.18); }
+
+    /* ── Emoji Containers ── */
+    .emojis-section { animation: fadeUp .5s cubic-bezier(.22,1,.36,1) .28s both; }
+    .section-title { font-family: 'Space Mono', monospace; font-size: 12.5px; font-weight: 900; color: #8b8099; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; }
+    
+    .emojis-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 10px; margin-bottom: 32px; }
+    .emoji-item { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; border: 2.5px solid #f0ebff; border-radius: 16px; height: 68px; cursor: pointer; font-size: 30px; transition: all .18s cubic-bezier(.34,1.56,.64,1); position: relative; user-select: none; }
+    .emoji-item:hover { transform: scale(1.12); border-color: #fde047; background: #fefce8; box-shadow: 0 6px 16px rgba(234,179,8,0.1); }
+    .emoji-item:active { transform: scale(0.94); }
+
+    /* Tooltip */
+    .emoji-tooltip { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(-6px); background: #1a1225; color: #fff; font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 6px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .15s; z-index: 10; }
+    .emoji-item:hover .emoji-tooltip { opacity: 1; }
+
+    /* ── Bottom Cart Bar ── */
+    .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 2.5px solid #f0ebff; padding: 16px 24px; display: flex; align-items: center; gap: 16px; box-shadow: 0 -8px 24px rgba(26,18,37,0.03); z-index: 100; transition: transform .3s; }
+    .cart-input-wrap { flex: 1; position: relative; display: flex; align-items: center; }
+    .cart-input { width: 100%; font-family: 'Nunito', sans-serif; font-size: 18px; font-weight: 700; padding: 12px 16px; border: 2.5px solid #e8e4f0; border-radius: 12px; background: #faf8ff; color: #1a1225; outline: none; letter-spacing: 2px; }
+    .cart-label { font-size: 12px; font-weight: 800; color: #8b8099; text-transform: uppercase; letter-spacing: 1px; font-family: 'Space Mono', monospace; white-space: nowrap; margin-right: 8px; }
+    
+    .cart-actions { display: flex; gap: 8px; }
+    .cart-btn { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 14px; padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer; transition: transform .15s, box-shadow .15s; white-space: nowrap; }
+    .cart-btn.yellow { background: #eab308; color: #fff; box-shadow: 0 4px 0 #a16207; }
+    .cart-btn.yellow:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #a16207; }
+    .cart-btn.yellow:active { transform: translateY(2px); box-shadow: 0 2px 0 #a16207; }
+    .cart-btn.outline { background: #fff; color: #6b6580; border: 2px solid #e8e4f0; }
+    .cart-btn.outline:hover { background: #fef2f2; border-color: #fca5a5; color: #ef4444; }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 92px; right: 28px; background: #1a1225; color: #fff; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; padding: 14px 22px; border-radius: 14px; box-shadow: 0 12px 40px rgba(26,18,37,.3); z-index: 9999; transform: translateY(80px); opacity: 0; transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .3s; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    .footer { text-align: center; padding: 24px 0 0; border-top: 2px dashed #f0ebff; margin-top: 32px; }
+    .footer p { font-size: 13px; color: #c4b9d8; font-weight: 700; }
+    .ft-heart { color: #ff6b6b; } .ft-brand { color: #7c3aed; font-weight: 900; }
+
+    @media (max-width: 600px) {
+      .page { padding: 0 16px 160px; }
+      .cart-bar { flex-direction: column; align-items: stretch; gap: 10px; }
+      .cart-label { display: none; }
+    }
+  
+    /* ── Dark Mode Overrides ── */
+    html.dark-mode body, body.dark-mode { background: #120c1a !important; color: #e2daf0 !important; }
+    .dark-mode nav .logo { color: #e2daf0 !important; }
+    .dark-mode nav .logo-box { background: #2b1f3d !important; }
+    .dark-mode .btn-back { color: #a59cb5 !important; }
+    .dark-mode .btn-back:hover { background: #2b223d !important; color: #c084fc !important; }
+    .dark-mode .tool-header-text h1 { color: #fff !important; }
+    .dark-mode .tool-header-text p { color: #a59cb5 !important; }
+    .dark-mode .main-card, .dark-mode .result-card, .dark-mode .file-list-card, .dark-mode .preview-card, .dark-mode .history-card, .dark-mode .editor-box, .dark-mode .preview-box, .dark-mode .output-box, .dark-mode .tool-panel { background: #1d162a !important; border-color: #2b223d !important; color: #e2daf0 !important; }
+    .dark-mode input, .dark-mode textarea, .dark-mode select { background: #120c1a !important; border-color: #2b223d !important; color: #fff !important; }
+    .dark-mode .footer { border-top-color: #2b223d !important; }
+    .dark-mode .footer p, .dark-mode .footer p span { color: #6b607a !important; }
+    .dark-mode .file-item, .dark-mode .item-row { background: #120c1a !important; border-color: #2b223d !important; }
+    .dark-mode .file-name, .dark-mode .item-name { color: #fff !important; }
+    .dark-mode .action-btn { background: #1d162a !important; border-color: #2b223d !important; color: #a59cb5 !important; }
+    .dark-mode .action-btn:hover { border-color: #7c3aed !important; color: #c084fc !important; background: #2b223d !important; }
+    .dark-mode .toast { background: #2b223d !important; border: 1.5px solid #7c3aed !important; color: #fff !important; }
+    .dark-mode .option-group label { color: #a59cb5 !important; }
+</style>
+  <link rel="icon" href="../favicon.png" type="image/png" />
+</head>
+<body>
+<div class="page">
+  <nav>
+    <a class="logo" href="../index.html#tools-section"><div class="logo-box"><img src="../logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" /></div><span>ToolboxID</span></a>
+    <a class="btn-back" href="../index.html#tools-section">← Kembali</a>
+  </nav>
+
+  <div class="tool-header">
+    <div class="tool-header-inner">
+      <div class="tool-icon-big">😊</div>
+      <div class="tool-header-text">
+        <div class="tool-category-badge">😀 Desain · Utility</div>
+        <h1>Emoji Picker</h1>
+        <p>Cari, pilih, dan salin emoji dengan cepat. Klik emoji untuk menyalin langsung atau kumpulkan di keranjang bawah untuk menyalin banyak sekaligus.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Input -->
+  <div class="search-wrapper">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" class="search-input" placeholder="Cari emoji (misal: senyum, cinta, api, wfh, dll)..." oninput="filterEmojis()" />
+  </div>
+
+  <!-- Category Tabs -->
+  <div class="category-tabs" id="categoryTabs">
+    <button class="tab-btn active" onclick="switchCategory('all')">🌈 Semua</button>
+    <button class="tab-btn" onclick="switchCategory('smileys')">😊 Smileys & Emosi</button>
+    <button class="tab-btn" onclick="switchCategory('people')">👤 Orang & Tubuh</button>
+    <button class="tab-btn" onclick="switchCategory('nature')">🐾 Hewan & Alam</button>
+    <button class="tab-btn" onclick="switchCategory('food')">🍔 Makanan & Minuman</button>
+    <button class="tab-btn" onclick="switchCategory('activity')">⚽ Aktivitas & Hobi</button>
+    <button class="tab-btn" onclick="switchCategory('travel')">🚗 Perjalanan & Tempat</button>
+    <button class="tab-btn" onclick="switchCategory('objects')">💡 Benda</button>
+    <button class="tab-btn" onclick="switchCategory('symbols')">🚩 Simbol & Bendera</button>
+  </div>
+
+  <!-- Emojis Container -->
+  <div class="emojis-section">
+    <!-- Recent Emojis -->
+    <div id="recentSection" style="display:none">
+      <div class="section-title">🕒 Terakhir Digunakan</div>
+      <div class="emojis-grid" id="recentGrid"></div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="section-title" id="gridTitle">🌈 Semua Emoji</div>
+    <div class="emojis-grid" id="mainGrid">
+      <!-- Loaded dynamically -->
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>Dibuat dengan <span class="ft-heart">❤️</span> oleh <span class="ft-brand">Ali Akbar</span> · Gratis untuk semua orang</p>
+  </footer>
+</div>
+
+<!-- Cart Bar -->
+<div class="cart-bar" id="cartBar">
+  <span class="cart-label">Keranjang Emoji:</span>
+  <div class="cart-input-wrap">
+    <input type="text" id="cartInput" class="cart-input" readonly placeholder="Klik emoji di atas untuk mengumpulkan..." />
+  </div>
+  <div class="cart-actions">
+    <button class="cart-btn yellow" onclick="copyCart()">📋 Salin Keranjang</button>
+    <button class="cart-btn outline" onclick="clearCart()">🗑️ Bersihkan</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">Done!</div>
+
+<script>
+  // Structured Emoji Data
+  const EMOJIS = [
+    // Smileys & Emosi
+    { char: '😀', name: 'Grinning Face / Senyum Lebar', cat: 'smileys', tags: 'grinning smile happy senyum gembira tertawa' },
+    { char: '😃', name: 'Grinning Face with Big Eyes / Senyum Mata Besar', cat: 'smileys', tags: 'grinning smile happy senyum senang' },
+    { char: '😄', name: 'Grinning Face with Smiling Eyes / Senyum Gembira', cat: 'smileys', tags: 'smile happy senyum senang ketawa ngakak' },
+    { char: '😁', name: 'Beaming Face / Meringis Lebar', cat: 'smileys', tags: 'beaming smile happy gigi meringis' },
+    { char: '😆', name: 'Squinting Face / Tertawa Sipit', cat: 'smileys', tags: 'squint smile happy ketawa sipit ngakak' },
+    { char: '😅', name: 'Grinning Face with Sweat / Senyum Keringat', cat: 'smileys', tags: 'sweat smile happy lega cemas ketawa' },
+    { char: '😂', name: 'Face with Tears of Joy / Menangis Bahagia', cat: 'smileys', tags: 'tears joy happy menangis ketawa ngakak lucu kocak' },
+    { char: '🤣', name: 'Rolling on the Floor Laughing / Tertawa Terpingkal', cat: 'smileys', tags: 'floor laugh roll ngakak guling lucu kocak' },
+    { char: '😊', name: 'Smiling Face with Smiling Eyes / Senyum Malu', cat: 'smileys', tags: 'smile blush happy senyum manis' },
+    { char: '😇', name: 'Smiling Face with Halo / Malaikat', cat: 'smileys', tags: 'halo angel innocent alim baik surga' },
+    { char: '🙂', name: 'Slightly Smiling Face / Senyum Tipis', cat: 'smileys', tags: 'smile senyum datar terpaksa' },
+    { char: '🙃', name: 'Upside-Down Face / Wajah Terbalik', cat: 'smileys', tags: 'upside down silly sarcasm konyol becanda' },
+    { char: '😉', name: 'Winking Face / Kedipan Mata', cat: 'smileys', tags: 'winking eye kedip centil goda' },
+    { char: '😌', name: 'Relieved Face / Lega', cat: 'smileys', tags: 'relieved calm peace lega tenang damai' },
+    { char: '😍', name: 'Heart Eyes / Mata Hati', cat: 'smileys', tags: 'love heart eyes fall suka cinta kagum naksir' },
+    { char: '🥰', name: 'Smiling Face with Hearts / Penuh Cinta', cat: 'smileys', tags: 'love hearts blush sayang mesra jatuh cinta' },
+    { char: '😘', name: 'Blowing Kiss / Ciuman', cat: 'smileys', tags: 'kiss love blow cup cium sayang' },
+    { char: '😋', name: 'Yum / Lezat', cat: 'smileys', tags: 'yum delicious yummy lezat enak makan' },
+    { char: '😛', name: 'Sticking Out Tongue / Melet', cat: 'smileys', tags: 'tongue tease melet ejek becanda' },
+    { char: '😜', name: 'Winking Eye Tongue / Melet Kedip', cat: 'smileys', tags: 'wink tongue melet kedip becanda konyol' },
+    { char: '🤪', name: 'Zany Face / Gila Konyol', cat: 'smileys', tags: 'zany silly konyol gila kocak' },
+    { char: '😝', name: 'Squinting Tongue / Melet Sipit', cat: 'smileys', tags: 'squint tongue melet sipit konyol' },
+    { char: '🤑', name: 'Money Mouth / Wajah Uang', cat: 'smileys', tags: 'money mouth dollar koin uang kaya cuan' },
+    { char: '🤗', name: 'Hugging Face / Pelukan', cat: 'smileys', tags: 'hug peluk ramah salam hangat' },
+    { char: '🤭', name: 'Hand Over Mouth / Menutup Mulut', cat: 'smileys', tags: 'hand mouth gigit jari upps ketawa malu' },
+    { char: '🤫', name: 'Shushing Face / Diam', cat: 'smileys', tags: 'shush quiet diam berbisik rahasia' },
+    { char: '🤔', name: 'Thinking Face / Berpikir', cat: 'smileys', tags: 'thinking ponder pikir bingung mikir' },
+    { char: '🤐', name: 'Zipper Mouth / Mulut Resleting', cat: 'smileys', tags: 'zipper mouth diam rahasia bungkam' },
+    { char: '🤨', name: 'Raised Eyebrow / Alis Naik', cat: 'smileys', tags: 'eyebrow suspicious curiga heran tidak percaya' },
+    { char: '😐', name: 'Neutral Face / Netral', cat: 'smileys', tags: 'neutral flat datar biasa saja' },
+    { char: '😑', name: 'Expressionless Face / Tanpa Ekspresi', cat: 'smileys', tags: 'flat malas bosan' },
+    { char: '😬', name: 'Grimacing Face / Meringis Cemas', cat: 'smileys', tags: 'grimace gigi meringis cemas takut salah' },
+    { char: '🙄', name: 'Rolling Eyes / Melirik Malas', cat: 'smileys', tags: 'roll eyes bosan malas cuek melirik' },
+    { char: '😏', name: 'Smirking Face / Senyum Sombong', cat: 'smileys', tags: 'smirk sneer sombong sinis remehkan' },
+    { char: '😒', name: 'Unamused Face / Tidak Tertarik', cat: 'smileys', tags: 'unamused cuek bosan sebal' },
+    { char: '😔', name: 'Pensive Face / Sedih Melamun', cat: 'smileys', tags: 'pensive sad sedih menyesal lesu' },
+    { char: '😴', name: 'Sleeping Face / Tidur', cat: 'smileys', tags: 'sleep snore tidur ngantuk lelap zzz' },
+    { char: '😷', name: 'Medical Mask / Masker Kesehatan', cat: 'smileys', tags: 'mask sick sakit masker flu korona' },
+    { char: '🥵', name: 'Hot Face / Kepanasan', cat: 'smileys', tags: 'hot red kepanasan gerah membara' },
+    { char: '🥶', name: 'Cold Face / Kedinginan', cat: 'smileys', tags: 'cold blue kedinginan beku menggigil' },
+    { char: '🤢', name: 'Nauseated Face / Mual', cat: 'smileys', tags: 'nauseated green mual ingin muntah jijik' },
+    { char: '🤮', name: 'Vomiting Face / Muntah', cat: 'smileys', tags: 'vomit muntah sakit kotor' },
+    { char: '🤯', name: 'Exploding Head / Pikiran Meledak', cat: 'smileys', tags: 'explode head mind meledak pusing kaget luar biasa' },
+    { char: '🥳', name: 'Partying Face / Pesta', cat: 'smileys', tags: 'party celebrate pesta ulang tahun gembira' },
+    { char: '😎', name: 'Sunglasses / Keren', cat: 'smileys', tags: 'cool glasses kacamata hitam keren santai' },
+    { char: '🤓', name: 'Nerd Face / Kutu Buku', cat: 'smileys', tags: 'nerd geek kacamata kutu buku pintar' },
+    { char: '🧐', name: 'Monocle / Menyelidiki', cat: 'smileys', tags: 'monocle investigate periksa teliti' },
+    { char: '😭', name: 'Loudly Crying Face / Menangis Kencang', cat: 'smileys', tags: 'cry sad tears nangis sedih kecewa' },
+    { char: '😱', name: 'Screaming in Fear / Kaget Histeris', cat: 'smileys', tags: 'scream fear kaget histeris teriak takut' },
+    { char: '😡', name: 'Pouting Face / Marah Merah', cat: 'smileys', tags: 'rage angry pouting marah emosi ngamuk' },
+    { char: '😈', name: 'Smiling Devil / Iblis Tersenyum', cat: 'smileys', tags: 'devil evil nakal jahat licik' },
+    { char: '💀', name: 'Skull / Tengkorak', cat: 'smileys', tags: 'skull dead tengkorak mati mati ketawa' },
+    { char: '💩', name: 'Pile of Poop / Poop', cat: 'smileys', tags: 'poop pup kotoran lucu' },
+    { char: '🔥', name: 'Fire / Api Membara', cat: 'smileys', tags: 'fire hot api membara keren membakar' },
+
+    // Orang & Tubuh
+    { char: '👋', name: 'Waving Hand / Melambai', cat: 'people', tags: 'wave hand lambai dadah halo dada' },
+    { char: '👌', name: 'OK Hand / Tangan OK', cat: 'people', tags: 'ok hand tangan mantap sip setuju' },
+    { char: '👍', name: 'Thumbs Up / Jempol Atas', cat: 'people', tags: 'thumbs up jempol mantap setuju suka' },
+    { char: '👎', name: 'Thumbs Down / Jempol Bawah', cat: 'people', tags: 'thumbs down jempol jelek buruk payah' },
+    { char: '👏', name: 'Clapping Hands / Tepuk Tangan', cat: 'people', tags: 'clap hands tepuk tangan hebat salut' },
+    { char: '🙌', name: 'Raising Hands / Angkat Tangan', cat: 'people', tags: 'raise hands hura hore bersyukur' },
+    { char: '🙏', name: 'Folded Hands / Berdoa / Maaf', cat: 'people', tags: 'folded hands pray doa maaf terima kasih pliss' },
+    { char: '💪', name: 'Flexed Biceps / Otot Kekuatan', cat: 'people', tags: 'biceps muscle otot kuat semangat' },
+    { char: '❤️', name: 'Red Heart / Hati Merah', cat: 'people', tags: 'heart love hati merah cinta sayang' },
+    { char: '💖', name: 'Sparkling Heart / Hati Berkilau', cat: 'people', tags: 'heart sparkle cinta berkilau manis' },
+    { char: '🧠', name: 'Brain / Otak', cat: 'people', tags: 'brain mind otak intelijen berpikir' },
+    { char: '👀', name: 'Eyes / Mata Melirik', cat: 'people', tags: 'eyes mata melirik intip lihat' },
+
+    // Hewan & Alam
+    { char: '🐶', name: 'Dog Face / Anjing', cat: 'nature', tags: 'dog puppy anjing guk' },
+    { char: '🐱', name: 'Cat Face / Kucing', cat: 'nature', tags: 'cat kitty kucing meow' },
+    { char: '🦁', name: 'Lion / Singa', cat: 'nature', tags: 'lion singa raja hutan' },
+    { char: '🦄', name: 'Unicorn / Kuda Poni', cat: 'nature', tags: 'unicorn kuda poni magis' },
+    { char: '🐝', name: 'Honeybee / Lebah', cat: 'nature', tags: 'bee lebah madu sengat' },
+    { char: '🦋', name: 'Butterfly / Kupu-Kupu', cat: 'nature', tags: 'butterfly kupu cantik alam terbang' },
+    { char: '🐙', name: 'Octopus / Gurita', cat: 'nature', tags: 'octopus gurita laut' },
+    { char: '🐬', name: 'Dolphin / Lumba-Lumba', cat: 'nature', tags: 'dolphin lumba laut' },
+    { char: '🌲', name: 'Evergreen Tree / Pohon Pinus', cat: 'nature', tags: 'tree pinus pohon hutan alam' },
+    { char: '🌱', name: 'Seedling / Tunas', cat: 'nature', tags: 'seedling tunas tanaman tumbuh subur' },
+    { char: '🍀', name: 'Four Leaf Clover / Semanggi Keberuntungan', cat: 'nature', tags: 'clover semanggi untung hoki' },
+    { char: '🌸', name: 'Cherry Blossom / Sakura', cat: 'nature', tags: 'sakura cherry blossom bunga cantik' },
+
+    // Makanan & Minuman
+    { char: '🍎', name: 'Red Apple / Apel Merah', cat: 'food', tags: 'apple apel merah buah sehat' },
+    { char: '🍌', name: 'Banana / Pisang', cat: 'food', tags: 'banana pisang buah kuning' },
+    { char: '🍉', name: 'Watermelon / Semangka', cat: 'food', tags: 'watermelon semangka merah segar' },
+    { char: '🥑', name: 'Avocado / Alpukat', cat: 'food', tags: 'avocado alpukat jus buah' },
+    { char: '🍔', name: 'Burger / Hamburger', cat: 'food', tags: 'burger hamburger daging makan cepat saji' },
+    { char: '🍕', name: 'Pizza / Pizza Lezat', cat: 'food', tags: 'pizza roti makan keju' },
+    { char: '🍿', name: 'Popcorn / Berondong Jagung', cat: 'food', tags: 'popcorn jagung bioskop nonton cemilan' },
+    { char: '🍩', name: 'Donut / Donat', cat: 'food', tags: 'donut donat manis cokelat cemilan' },
+    { char: '☕', name: 'Hot Beverage / Kopi Hangat', cat: 'food', tags: 'coffee tea kopi teh hangat pagi cangkir' },
+    { char: '🍺', name: 'Beer Mug / Bir', cat: 'food', tags: 'beer bir gelas pesta mabuk' },
+
+    // Aktivitas & Hobi
+    { char: '⚽', name: 'Soccer Ball / Bola Sepak', cat: 'activity', tags: 'soccer football sepak bola olahraga' },
+    { char: '🏀', name: 'Basketball / Bola Basket', cat: 'activity', tags: 'basketball basket olahraga' },
+    { char: '🎮', name: 'Video Game / Game Controller', cat: 'activity', tags: 'game controller main game ps xbox stik' },
+    { char: '🎨', name: 'Artist Palette / Palet Lukis', cat: 'activity', tags: 'paint art lukis warna seni gambar' },
+    { char: '🎬', name: 'Clapper Board / Sutradara', cat: 'activity', tags: 'clapper movie film bioskop rekam sutradara' },
+    { char: '🎤', name: 'Microphone / Menyanyi', cat: 'activity', tags: 'mic sing karaoke lagu musik' },
+    { char: '🎧', name: 'Headphone / Musik', cat: 'activity', tags: 'headphone musik dengar lagu sound' },
+    { char: '🎸', name: 'Guitar / Gitar Melodi', cat: 'activity', tags: 'guitar gitar alat musik genjreng' },
+
+    // Perjalanan & Tempat
+    { char: '🚗', name: 'Car / Mobil', cat: 'travel', tags: 'car mobil otomotif jalan berkendara' },
+    { char: '🚀', name: 'Rocket / Roket Meluncur', cat: 'travel', tags: 'rocket roket luar angkasa terbang cepat to the moon' },
+    { char: '✈️', name: 'Airplane / Pesawat Terbang', cat: 'travel', tags: 'plane airplane pesawat terbang bandara liburan' },
+    { char: '🚁', name: 'Helicopter / Helikopter', cat: 'travel', tags: 'helicopter helikopter baling terbang' },
+    { char: '🏢', name: 'Office Building / Kantor', cat: 'travel', tags: 'office gedung kantor kerja bisnis' },
+    { char: '🏖️', name: 'Beach with Umbrella / Pantai', cat: 'travel', tags: 'beach pantai laut liburan santai' },
+    { char: '🌍', name: 'Earth / Bumi', cat: 'travel', tags: 'earth globe bumi dunia negara' },
+    { char: '🌌', name: 'Milky Way / Galaksi', cat: 'travel', tags: 'milky way bintang galaksi malam indah' },
+
+    // Benda
+    { char: '⌚', name: 'Watch / Jam Tangan', cat: 'objects', tags: 'watch time jam tangan waktu arloji' },
+    { char: '📱', name: 'Mobile Phone / HP', cat: 'objects', tags: 'phone hp smartphone gadget seluler' },
+    { char: '💻', name: 'Laptop / Komputer', cat: 'objects', tags: 'laptop computer pc kerja wfh' },
+    { char: '🔑', name: 'Key / Kunci', cat: 'objects', tags: 'key kunci gembok akses rahasia' },
+    { char: '💡', name: 'Light Bulb / Bohlam Ide', cat: 'objects', tags: 'bulb light ide cemerlang bohlam lampu' },
+    { char: '📕', name: 'Closed Book / Buku Merah', cat: 'objects', tags: 'book buku baca belajar perpustakaan' },
+    { char: '✉️', name: 'Envelope / Surat', cat: 'objects', tags: 'mail envelope surat pos kirim pesan' },
+    { char: '🗑️', name: 'Trash Can / Tong Sampah', cat: 'objects', tags: 'trash bin sampah buang hapus' },
+
+    // Simbol & Bendera
+    { char: '💯', name: 'Hundred Points / Nilai 100', cat: 'symbols', tags: 'hundred 100 nilai sempurna mantap' },
+    { char: '⭐', name: 'Star / Bintang Emas', cat: 'symbols', tags: 'star bintang emas berkilau rating' },
+    { char: '✨', name: 'Sparkles / Kilauan Magis', cat: 'symbols', tags: 'sparkles kilau bersih baru estetik' },
+    { char: '🚨', name: 'Police Car Light / Sirine', cat: 'symbols', tags: 'siren darurat bahaya polisi lampu' },
+    { char: '🚫', name: 'Prohibited / Dilarang', cat: 'symbols', tags: 'no enter dilarang stop blokir' },
+    { char: '❌', name: 'Cross Mark / Silang Merah', cat: 'symbols', tags: 'cross wrong salah silang batal' },
+    { char: '🇮🇩', name: 'Flag: Indonesia / Bendera Indonesia', cat: 'symbols', tags: 'flag indonesia bendera nkri merah putih' },
+    { char: '🇺🇸', name: 'Flag: United States / Bendera Amerika', cat: 'symbols', tags: 'flag usa america bendera' }
+  ];
+
+  let activeCategory = 'all';
+
+  function displayEmojis(list) {
+    const grid = document.getElementById('mainGrid');
+    
+    if (list.length === 0) {
+      grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #8b8099; padding: 40px 0; font-weight: 700;">Tidak ada emoji yang cocok dengan pencarianmu. 🥺</div>`;
+      return;
+    }
+
+    grid.innerHTML = list.map(item => `
+      <div class="emoji-item" onclick="selectEmoji('${item.char}')">
+        ${item.char}
+        <span class="emoji-tooltip">${item.name}</span>
+      </div>
+    `).join('');
+  }
+
+  function filterEmojis() {
+    const query = document.getElementById('searchInput').value.toLowerCase().trim();
+    
+    // Clear active category styles when searching
+    if (query !== '') {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('gridTitle').textContent = `🔍 Hasil Pencarian untuk "${query}"`;
+      
+      const filtered = EMOJIS.filter(e => {
+        return e.name.toLowerCase().includes(query) || 
+               e.tags.toLowerCase().includes(query) || 
+               e.char === query;
+      });
+      displayEmojis(filtered);
+    } else {
+      // Restore active category display
+      switchCategory(activeCategory);
+    }
+  }
+
+  function switchCategory(cat) {
+    activeCategory = cat;
+    document.getElementById('searchInput').value = ''; // Clear search input when switching categories
+    
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    
+    // Set active button style
+    const btns = document.querySelectorAll('.tab-btn');
+    if (cat === 'all') btns[0].classList.add('active');
+    else if (cat === 'smileys') btns[1].classList.add('active');
+    else if (cat === 'people') btns[2].classList.add('active');
+    else if (cat === 'nature') btns[3].classList.add('active');
+    else if (cat === 'food') btns[4].classList.add('active');
+    else if (cat === 'activity') btns[5].classList.add('active');
+    else if (cat === 'travel') btns[6].classList.add('active');
+    else if (cat === 'objects') btns[7].classList.add('active');
+    else if (cat === 'symbols') btns[8].classList.add('active');
+
+    // Title update
+    const titles = {
+      all: '🌈 Semua Emoji',
+      smileys: '😊 Smileys & Emosi',
+      people: '👤 Orang & Tubuh',
+      nature: '🐾 Hewan & Alam',
+      food: '🍔 Makanan & Minuman',
+      activity: '⚽ Aktivitas & Hobi',
+      travel: '🚗 Perjalanan & Tempat',
+      objects: '💡 Benda',
+      symbols: '🚩 Simbol & Bendera'
+    };
+    document.getElementById('gridTitle').textContent = titles[cat];
+
+    if (cat === 'all') {
+      displayEmojis(EMOJIS);
+    } else {
+      const filtered = EMOJIS.filter(e => e.cat === cat);
+      displayEmojis(filtered);
+    }
+  }
+
+  function selectEmoji(emoji) {
+    // 1. Copy to clipboard immediately
+    navigator.clipboard.writeText(emoji).then(() => {
+      showToast('📋 Copied!', `Emoji ${emoji} berhasil disalin ke clipboard!`);
+    });
+
+    // 2. Add to multi-copy cart
+    const cart = document.getElementById('cartInput');
+    cart.value += emoji;
+
+    // 3. Save to recent list
+    saveToRecent(emoji);
+  }
+
+  // Multi-copy cart functions
+  function copyCart() {
+    const cart = document.getElementById('cartInput');
+    if (!cart.value) {
+      showToast('⚠️ Keranjang Kosong', 'Klik beberapa emoji terlebih dahulu!');
+      return;
+    }
+    navigator.clipboard.writeText(cart.value).then(() => {
+      showToast('🎉 Berhasil!', 'Semua emoji di keranjang berhasil disalin!');
+    });
+  }
+
+  function clearCart() {
+    document.getElementById('cartInput').value = '';
+    showToast('🗑️ Bersih', 'Keranjang emoji dikosongkan!');
+  }
+
+  // Recent storage functions
+  function saveToRecent(emoji) {
+    let recents = JSON.parse(localStorage.getItem('tb_recent_emojis') || '[]');
+    // Remove if already exists
+    recents = recents.filter(e => e !== emoji);
+    // Add to front
+    recents.unshift(emoji);
+    // Keep max 14 items
+    if (recents.length > 14) recents.pop();
+    
+    localStorage.setItem('tb_recent_emojis', JSON.stringify(recents));
+    loadRecents();
+  }
+
+  function loadRecents() {
+    const recents = JSON.parse(localStorage.getItem('tb_recent_emojis') || '[]');
+    const section = document.getElementById('recentSection');
+    const grid = document.getElementById('recentGrid');
+    
+    if (recents.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+
+    section.style.display = 'block';
+    grid.innerHTML = recents.map(emoji => {
+      const item = EMOJIS.find(e => e.char === emoji) || { name: 'Emoji' };
+      return `
+        <div class="emoji-item" onclick="selectEmoji('${emoji}')">
+          ${emoji}
+          <span class="emoji-tooltip">${item.name}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function showToast(title, msg) {
+    const t = document.getElementById('toast');
+    t.innerHTML = `<strong>${title}</strong> ${msg}`;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // Initialization
+  switchCategory('all');
+  loadRecents();
+</script>
+</body>
+</html>

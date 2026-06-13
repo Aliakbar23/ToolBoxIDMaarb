@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <script>
+    (function() {
+      const t = localStorage.getItem('toolboxid-theme');
+      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark-mode');
+        document.addEventListener('DOMContentLoaded', () => document.body.classList.add('dark-mode'));
+      }
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSV ke JSON — ToolboxID</title>
+  <meta name="description" content="Konversi file CSV ke format JSON langsung di browser. Gratis, cepat, tanpa upload ke server." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,700;0,800;0,900;1,800;1,900&family=Space+Mono:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Nunito', sans-serif; background: #fefcf7; color: #1a1225; overflow-x: clip; -webkit-font-smoothing: antialiased; }
+    .page { max-width: 1000px; margin: 0 auto; padding: 0 32px 80px; }
+
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 24px 0 20px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-family: 'Space Mono', monospace; font-size: 15px; font-weight: 700; color: #1a1225; text-decoration: none; }
+    .logo-box { width: 36px; height: 36px; background: #1a1225; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; animation: logo3dFlip 6s ease-in-out infinite; box-shadow: 0 4px 12px rgba(255,107,107,.35); }
+    @keyframes logo3dFlip { 0%,30%,100%{transform:rotateY(0deg) scale(1)} 42%,58%{transform:rotateY(180deg) scale(1.1)} }
+    .btn-back { font-family: 'Nunito', sans-serif; font-size: 13.5px; font-weight: 800; padding: 8px 17px; border-radius: 100px; cursor: pointer; transition: background .18s, color .18s; color: #6b6580; background: transparent; border: none; text-decoration: none; }
+    .btn-back:hover { background: #f0ebff; color: #7c3aed; }
+
+    .tool-header { padding: 40px 0 28px; }
+    .tool-header-inner { display: flex; align-items: flex-start; gap: 20px; }
+    .tool-icon-big { width: 68px; height: 68px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 32px; background: #eff6ff; border: 2.5px solid #bfdbfe; box-shadow: 0 6px 20px rgba(59,130,246,.12); flex-shrink: 0; }
+    .tool-category-badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #1d4ed8; background: #eff6ff; border: 2px solid #bfdbfe; border-radius: 100px; padding: 4px 14px; margin-bottom: 8px; font-family: 'Space Mono', monospace; }
+    .tool-header-text h1 { font-size: clamp(24px, 3.5vw, 34px); font-weight: 900; letter-spacing: -.8px; margin-bottom: 6px; }
+    .tool-header-text p { font-size: 14.5px; color: #6b6580; line-height: 1.7; }
+
+    /* Upload zone */
+    .upload-zone { border: 3px dashed #c4b5fd; border-radius: 20px; background: #faf8ff; padding: 40px 24px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; margin-bottom: 20px; }
+    .upload-zone:hover, .upload-zone.drag { border-color: #7c3aed; background: #f5f3ff; }
+    .upload-zone .up-icon { font-size: 42px; display: block; margin-bottom: 12px; }
+    .upload-zone h3 { font-size: 16px; font-weight: 900; margin-bottom: 6px; }
+    .upload-zone p { font-size: 13px; color: #8b8099; }
+    .upload-zone p span { color: #7c3aed; font-weight: 800; cursor: pointer; }
+    input[type=file] { display: none; }
+
+    /* Options bar */
+    .options-bar { display: flex; gap: 16px; flex-wrap: wrap; padding: 16px 20px; background: #fff; border: 2.5px solid #f0ebff; border-radius: 14px; margin-bottom: 20px; align-items: center; }
+    .opt-group { display: flex; align-items: center; gap: 8px; }
+    .opt-group label { font-size: 13px; font-weight: 800; color: #6b6580; }
+    select.opt-sel { font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800; padding: 7px 12px; border: 2px solid #e8e4f0; border-radius: 10px; background: #fff; color: #1a1225; outline: none; cursor: pointer; }
+    select.opt-sel:focus { border-color: #a78bfa; }
+    .opt-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .opt-toggle input[type=checkbox] { width: 16px; height: 16px; accent-color: #3b82f6; cursor: pointer; }
+    .opt-toggle span { font-size: 13px; font-weight: 800; color: #1a1225; }
+
+    /* Split editors */
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .editor-box { display: flex; flex-direction: column; background: #fff; border: 2.5px solid #f0ebff; border-radius: 18px; overflow: hidden; }
+    .editor-box-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1.5px solid #f0ebff; background: #faf8ff; }
+    .editor-box-label { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #b5aed0; }
+    .editor-box-count { font-family: 'Space Mono', monospace; font-size: 11px; color: #c4b9d8; }
+    textarea.code-area { flex: 1; border: none; outline: none; resize: none; font-family: 'Space Mono', monospace; font-size: 12.5px; line-height: 1.7; padding: 18px; background: #fff; color: #1a1225; min-height: 340px; }
+    textarea.code-area.json-out { background: #f9f7ff; color: #4c1d95; }
+    textarea.code-area::placeholder { color: #d4cceb; }
+
+    /* Action buttons */
+    .action-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn-action { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 14px; padding: 13px 24px; border-radius: 14px; border: none; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+    .btn-action.blue { background: #3b82f6; color: #fff; box-shadow: 0 5px 0 #1d4ed8; }
+    .btn-action.blue:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #1d4ed8; }
+    .btn-action.outline { background: #fff; color: #1a1225; border: 2.5px solid #e8e4f0; box-shadow: 0 4px 0 #e8e4f0; }
+    .btn-action.outline:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #e8e4f0; }
+    .btn-action.green { background: #22c55e; color: #fff; box-shadow: 0 5px 0 #15803d; }
+    .btn-action.green:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #15803d; }
+
+    /* Stats */
+    .stats-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    .stat-chip { font-family: 'Space Mono', monospace; font-size: 11.5px; font-weight: 700; padding: 5px 14px; border-radius: 100px; background: #f0ebff; color: #6d28d9; border: 1.5px solid #ddd6fe; }
+
+    /* Table preview */
+    .table-preview-wrap { overflow-x: auto; margin-top: 16px; }
+    .table-preview { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .table-preview th { background: #3b82f6; color: #fff; padding: 9px 14px; text-align: left; font-weight: 800; white-space: nowrap; }
+    .table-preview td { padding: 8px 14px; border-bottom: 1.5px solid #f0ebff; white-space: nowrap; }
+    .table-preview tr:nth-child(even) td { background: #f8faff; }
+
+    .toast { position: fixed; bottom: 28px; right: 28px; background: #1a1225; color: #fff; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; padding: 14px 22px; border-radius: 14px; box-shadow: 0 12px 40px rgba(26,18,37,.3); z-index: 9999; display: flex; align-items: center; gap: 10px; transform: translateY(80px); opacity: 0; transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .3s; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .footer { text-align: center; padding: 24px 0 0; border-top: 2px dashed #f0ebff; margin-top: 32px; }
+    .footer p { font-size: 13px; color: #c4b9d8; font-weight: 700; }
+    .ft-heart { color: #ff6b6b; } .ft-brand { color: #7c3aed; font-weight: 900; }
+
+    @media (max-width: 700px) {
+      .page { padding: 0 16px 60px; }
+      .split { grid-template-columns: 1fr; }
+    }
+  
+    /* ── Dark Mode Overrides ── */
+    html.dark-mode body, body.dark-mode { background: #120c1a !important; color: #e2daf0 !important; }
+    .dark-mode nav .logo { color: #e2daf0 !important; }
+    .dark-mode nav .logo-box { background: #2b1f3d !important; }
+    .dark-mode .btn-back { color: #a59cb5 !important; }
+    .dark-mode .btn-back:hover { background: #2b223d !important; color: #c084fc !important; }
+    .dark-mode .tool-header-text h1 { color: #fff !important; }
+    .dark-mode .tool-header-text p { color: #a59cb5 !important; }
+    .dark-mode .main-card, .dark-mode .result-card, .dark-mode .file-list-card, .dark-mode .preview-card, .dark-mode .history-card, .dark-mode .editor-box, .dark-mode .preview-box, .dark-mode .output-box, .dark-mode .tool-panel { background: #1d162a !important; border-color: #2b223d !important; color: #e2daf0 !important; }
+    .dark-mode input, .dark-mode textarea, .dark-mode select { background: #120c1a !important; border-color: #2b223d !important; color: #fff !important; }
+    .dark-mode .footer { border-top-color: #2b223d !important; }
+    .dark-mode .footer p, .dark-mode .footer p span { color: #6b607a !important; }
+    .dark-mode .file-item, .dark-mode .item-row { background: #120c1a !important; border-color: #2b223d !important; }
+    .dark-mode .file-name, .dark-mode .item-name { color: #fff !important; }
+    .dark-mode .action-btn { background: #1d162a !important; border-color: #2b223d !important; color: #a59cb5 !important; }
+    .dark-mode .action-btn:hover { border-color: #7c3aed !important; color: #c084fc !important; background: #2b223d !important; }
+    .dark-mode .toast { background: #2b223d !important; border: 1.5px solid #7c3aed !important; color: #fff !important; }
+    .dark-mode .option-group label { color: #a59cb5 !important; }
+</style>
+  <link rel="icon" href="../favicon.png" type="image/png" />
+</head>
+<body>
+<div class="page">
+  <nav>
+    <a class="logo" href="../index.html#tools-section"><div class="logo-box"><img src="../logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" /></div><span>ToolboxID</span></a>
+    <a class="btn-back" href="../index.html#tools-section">← Kembali</a>
+  </nav>
+
+  <div class="tool-header">
+    <div class="tool-header-inner">
+      <div class="tool-icon-big">📊</div>
+      <div class="tool-header-text">
+        <div class="tool-category-badge">📊 Data · Dev</div>
+        <h1>CSV ke JSON Converter</h1>
+        <p>Konversi file CSV ke format JSON langsung di browser. Data tidak dikirim ke server — 100% privat.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload Zone -->
+  <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+    <span class="up-icon">📂</span>
+    <h3>Drop file CSV di sini</h3>
+    <p>atau <span onclick="document.getElementById('fileInput').click()">klik untuk pilih file</span></p>
+  </div>
+  <input type="file" id="fileInput" accept=".csv,.txt" onchange="onFileSelect(this)" />
+
+  <!-- Options -->
+  <div class="options-bar">
+    <div class="opt-group">
+      <label>Delimiter:</label>
+      <select class="opt-sel" id="delimSelect">
+        <option value=",">Comma (,)</option>
+        <option value=";">Semicolon (;)</option>
+        <option value="\t">Tab (\t)</option>
+        <option value="|">Pipe (|)</option>
+      </select>
+    </div>
+    <div class="opt-group">
+      <label>Output:</label>
+      <select class="opt-sel" id="outputSelect">
+        <option value="array">Array of Objects</option>
+        <option value="compact">Compact (minified)</option>
+      </select>
+    </div>
+    <label class="opt-toggle">
+      <input type="checkbox" id="firstRowHeader" checked onchange="convert()" />
+      <span>Baris pertama = header</span>
+    </label>
+    <label class="opt-toggle">
+      <input type="checkbox" id="autoType" checked onchange="convert()" />
+      <span>Auto-detect tipe data</span>
+    </label>
+  </div>
+
+  <!-- Split -->
+  <div class="split">
+    <div class="editor-box">
+      <div class="editor-box-header">
+        <span class="editor-box-label">📄 CSV Input</span>
+        <span class="editor-box-count" id="csvCount">0 baris</span>
+      </div>
+      <textarea class="code-area" id="csvInput" placeholder="name,age,city&#10;Alice,28,Jakarta&#10;Bob,34,Bandung&#10;Charlie,22,Surabaya" oninput="convert()"></textarea>
+    </div>
+    <div class="editor-box">
+      <div class="editor-box-header">
+        <span class="editor-box-label">🟡 JSON Output</span>
+        <span class="editor-box-count" id="jsonCount">0 records</span>
+      </div>
+      <textarea class="code-area json-out" id="jsonOutput" readonly placeholder="JSON akan muncul di sini..."></textarea>
+    </div>
+  </div>
+
+  <!-- Table Preview -->
+  <div id="tableWrap" style="display:none">
+    <div style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#b5aed0;margin-bottom:10px;">📋 Table Preview</div>
+    <div class="table-preview-wrap">
+      <table class="table-preview" id="tablePreview"></table>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow" style="display:none">
+    <span class="stat-chip" id="sc1">—</span>
+    <span class="stat-chip" id="sc2">—</span>
+    <span class="stat-chip" id="sc3">—</span>
+  </div>
+
+  <!-- Actions -->
+  <div class="action-row" style="margin-top:20px">
+    <button class="btn-action blue" id="copy-json-btn" onclick="copyJSON()">📋 Copy JSON</button>
+    <button class="btn-action green" id="download-btn" onclick="downloadJSON()">⬇️ Download .json</button>
+    <button class="btn-action outline" id="clear-btn" onclick="clearAll()">🗑️ Clear</button>
+    <button class="btn-action outline" id="sample-btn" onclick="loadSample()">📄 Load Sample</button>
+  </div>
+
+  <footer class="footer"><p>Dibuat dengan <span class="ft-heart">❤️</span> oleh <span class="ft-brand">Ali Akbar</span> · Gratis untuk semua orang</p></footer>
+</div>
+
+<div class="toast" id="toast"><span id="toastEmoji">✅</span><span id="toastMsg">Done!</span></div>
+
+<script>
+  const SAMPLE = `name,age,city,score,active
+Alice,28,Jakarta,95.5,true
+Bob,34,Bandung,78,false
+Charlie,22,Surabaya,88.2,true
+Diana,31,Medan,91,false
+Eve,25,Yogyakarta,72.8,true`;
+
+  function autoConvert(val) {
+    if (!document.getElementById('autoType').checked) return val;
+    if (val === '' || val === 'null' || val === 'NULL') return null;
+    if (val === 'true' || val === 'TRUE') return true;
+    if (val === 'false' || val === 'FALSE') return false;
+    const num = Number(val);
+    if (!isNaN(num) && val.trim() !== '') return num;
+    return val;
+  }
+
+  function parseCSV(csv) {
+    const delim = document.getElementById('delimSelect').value === '\\t' ? '\t' : document.getElementById('delimSelect').value;
+    const lines = csv.trim().split(/\r?\n/).filter(l => l.trim());
+    if (!lines.length) return [];
+    const useHeader = document.getElementById('firstRowHeader').checked;
+    const headers = useHeader ? lines[0].split(delim).map(h => h.trim().replace(/^"|"$/g,'')) : lines[0].split(delim).map((_,i) => `col${i+1}`);
+    const dataLines = useHeader ? lines.slice(1) : lines;
+    return dataLines.map(line => {
+      const vals = line.split(delim).map(v => v.trim().replace(/^"|"$/g,''));
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = autoConvert(vals[i] ?? ''); });
+      return obj;
+    });
+  }
+
+  function convert() {
+    const csv = document.getElementById('csvInput').value;
+    if (!csv.trim()) { resetOutput(); return; }
+    try {
+      const data = parseCSV(csv);
+      const compact = document.getElementById('outputSelect').value === 'compact';
+      const json = compact ? JSON.stringify(data) : JSON.stringify(data, null, 2);
+      document.getElementById('jsonOutput').value = json;
+
+      const lines = csv.trim().split('\n').length;
+      document.getElementById('csvCount').textContent = `${lines} baris`;
+      document.getElementById('jsonCount').textContent = `${data.length} records`;
+
+      // Stats
+      if (data.length > 0) {
+        const cols = Object.keys(data[0]).length;
+        document.getElementById('sc1').textContent = `📄 ${data.length} records`;
+        document.getElementById('sc2').textContent = `🗂 ${cols} kolom`;
+        document.getElementById('sc3').textContent = `💾 ${(new TextEncoder().encode(json).length / 1024).toFixed(1)} KB`;
+        document.getElementById('statsRow').style.display = 'flex';
+        renderTable(data);
+      }
+    } catch(e) {
+      document.getElementById('jsonOutput').value = '// Error parsing CSV:\n// ' + e.message;
+    }
+  }
+
+  function renderTable(data) {
+    if (!data.length) { document.getElementById('tableWrap').style.display = 'none'; return; }
+    const table = document.getElementById('tablePreview');
+    const headers = Object.keys(data[0]);
+    const limit = Math.min(data.length, 5);
+    let html = '<thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
+    for (let i = 0; i < limit; i++) {
+      html += '<tr>' + headers.map(h => `<td>${data[i][h] ?? ''}</td>`).join('') + '</tr>';
+    }
+    if (data.length > 5) html += `<tr><td colspan="${headers.length}" style="text-align:center;color:#b5aed0;font-style:italic;">... dan ${data.length - 5} baris lainnya</td></tr>`;
+    html += '</tbody>';
+    table.innerHTML = html;
+    document.getElementById('tableWrap').style.display = 'block';
+  }
+
+  function resetOutput() {
+    document.getElementById('jsonOutput').value = '';
+    document.getElementById('csvCount').textContent = '0 baris';
+    document.getElementById('jsonCount').textContent = '0 records';
+    document.getElementById('statsRow').style.display = 'none';
+    document.getElementById('tableWrap').style.display = 'none';
+  }
+
+  function onFileSelect(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => { document.getElementById('csvInput').value = e.target.result; convert(); };
+    reader.readAsText(file);
+    showToast('📂', `${file.name} berhasil dimuat!`);
+  }
+
+  function onDragOver(e) { e.preventDefault(); document.getElementById('uploadZone').classList.add('drag'); }
+  function onDragLeave() { document.getElementById('uploadZone').classList.remove('drag'); }
+  function onDrop(e) {
+    e.preventDefault();
+    document.getElementById('uploadZone').classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file) { const r = new FileReader(); r.onload = ev => { document.getElementById('csvInput').value = ev.target.result; convert(); }; r.readAsText(file); showToast('📂', `${file.name} berhasil dimuat!`); }
+  }
+
+  function copyJSON() {
+    const json = document.getElementById('jsonOutput').value;
+    if (!json) { showToast('⚠️', 'Tidak ada JSON untuk di-copy!'); return; }
+    navigator.clipboard.writeText(json).then(() => showToast('✅', 'JSON berhasil di-copy!'));
+  }
+
+  function downloadJSON() {
+    const json = document.getElementById('jsonOutput').value;
+    if (!json) { showToast('⚠️', 'Tidak ada data untuk didownload!'); return; }
+    const blob = new Blob([json], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'data.json'; a.click();
+    showToast('⬇️', 'File JSON berhasil didownload!');
+  }
+
+  function clearAll() {
+    document.getElementById('csvInput').value = '';
+    resetOutput();
+  }
+
+  function loadSample() {
+    document.getElementById('csvInput').value = SAMPLE;
+    convert();
+    showToast('📄', 'Sample data dimuat!');
+  }
+
+  function showToast(emoji, msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastEmoji').textContent = emoji;
+    document.getElementById('toastMsg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // Live update on option change
+  ['delimSelect', 'outputSelect'].forEach(id => document.getElementById(id).addEventListener('change', convert));
+</script>
+</body>
+</html>

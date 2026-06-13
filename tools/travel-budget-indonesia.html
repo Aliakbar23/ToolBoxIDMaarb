@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <script>
+    (function() {
+      const t = localStorage.getItem('toolboxid-theme');
+      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark-mode');
+        document.addEventListener('DOMContentLoaded', () => document.body.classList.add('dark-mode'));
+      }
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kalkulator Travel Budget Indonesia — ToolboxID</title>
+  <meta name="description" content="Estimasi budget liburan keliling berbagai kota di Indonesia. Hitung biaya akomodasi, makan, transportasi, dan aktivitas secara real-time dengan skema sharing cost." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,700;0,800;0,900;1,800;1,900&family=Space+Mono:wght@700&display=swap" rel="stylesheet" />
+  
+  <style>
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Nunito', sans-serif; background: #fefcf7; color: #1a1225; overflow-x: clip; -webkit-font-smoothing: antialiased; }
+    .page { max-width: 1200px; margin: 0 auto; padding: 0 32px 80px; }
+
+    /* ─── Navbar ─── */
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 24px 0 20px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-family: 'Space Mono', monospace; font-size: 15px; font-weight: 700; color: #1a1225; text-decoration: none; }
+    .logo-box { width: 36px; height: 36px; background: #1a1225; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; animation: logo3dFlip 6s ease-in-out infinite; box-shadow: 0 4px 12px rgba(13,148,136,.35); }
+    @keyframes logo3dFlip { 0%,30%,100%{transform:rotateY(0deg) scale(1)} 42%,58%{transform:rotateY(180deg) scale(1.1)} }
+    .btn-back { font-family: 'Nunito', sans-serif; font-size: 13.5px; font-weight: 800; padding: 8px 17px; border-radius: 100px; cursor: pointer; transition: background .18s, color .18s; color: #6b6580; background: transparent; border: none; text-decoration: none; }
+    .btn-back:hover { background: #e6fffa; color: #0d9488; }
+
+    /* ─── Tool Header ─── */
+    .tool-header { padding: 40px 0 28px; }
+    .tool-header-inner { display: flex; align-items: flex-start; gap: 20px; }
+    .tool-icon-big { width: 68px; height: 68px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 32px; background: #e6fffa; border: 2.5px solid #99f6e4; box-shadow: 0 6px 20px rgba(13,148,136,.12); flex-shrink: 0; animation: iconBounce .6s cubic-bezier(.34,1.56,.64,1) both; }
+    @keyframes iconBounce { from{opacity:0;transform:scale(.5) rotate(-15deg)} to{opacity:1;transform:scale(1) rotate(0deg)} }
+    .tool-category-badge { display: inline-flex; font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #0d9488; background: #e6fffa; border: 2px solid #99f6e4; border-radius: 100px; padding: 4px 14px; margin-bottom: 8px; font-family: 'Space Mono', monospace; }
+    .tool-header-text h1 { font-size: clamp(24px, 3.5vw, 34px); font-weight: 900; letter-spacing: -.8px; margin-bottom: 6px; }
+    .tool-header-text p { font-size: 14.5px; color: #6b6580; line-height: 1.7; }
+
+    /* ─── Layout Grid ─── */
+    .calculator-grid { display: grid; grid-template-columns: 1.2fr 1.1fr; gap: 28px; align-items: start; }
+
+    /* ─── Cards ─── */
+    .main-card { background: #fff; border: 2.5px solid #e2f1ee; border-radius: 24px; padding: 28px; box-shadow: 0 10px 30px rgba(13,148,136,0.02); margin-bottom: 24px; }
+    .card-title { font-size: 18px; font-weight: 900; color: #1a1225; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+
+    /* ─── Form Elements ─── */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .form-group { margin-bottom: 18px; position: relative; }
+    .form-group label { display: block; font-size: 13.5px; font-weight: 800; color: #4c4660; margin-bottom: 8px; }
+    
+    .input-wrap { position: relative; display: flex; align-items: center; }
+    .input-prefix { position: absolute; left: 16px; font-size: 15px; font-weight: 800; color: #8b8099; }
+    .input-suffix { position: absolute; right: 16px; font-size: 14px; font-weight: 800; color: #8b8099; }
+    
+    .form-input { width: 100%; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 700; padding: 12px 16px; border: 2.5px solid #d1e5e0; border-radius: 14px; background: #fff; color: #1a1225; outline: none; transition: border-color .2s, box-shadow .2s; }
+    .form-input:focus { border-color: #0d9488; box-shadow: 0 0 0 4px rgba(13,148,136,.12); }
+    .form-input-prefix { padding-left: 42px; }
+    .form-input-suffix { padding-right: 48px; }
+    
+    .form-select { width: 100%; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 700; padding: 12px 16px; border: 2.5px solid #d1e5e0; border-radius: 14px; background: #fff; color: #1a1225; outline: none; transition: border-color .2s; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238b8099' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; background-size: 18px; }
+    .form-select:focus { border-color: #0d9488; }
+
+    /* Segmented Controls (Toggle Tabs) */
+    .segmented-control { display: grid; grid-template-columns: repeat(3, 1fr); background: #f0f7f5; border: 2.5px solid #e2f1ee; border-radius: 14px; padding: 4px; }
+    .segment-btn { font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800; border: none; background: transparent; padding: 10px; border-radius: 10px; cursor: pointer; color: #6b6580; transition: all .15s; text-align: center; }
+    .segment-btn.active { background: #0d9488; color: #fff; box-shadow: 0 4px 10px rgba(13,148,136,.2); }
+    .segment-btn:hover:not(.active) { background: #e2f1ee; color: #0d9488; }
+
+    /* Custom Checkboxes / Switches */
+    .switch-group { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #f0f7f5; border: 2px solid #e2f1ee; border-radius: 14px; margin-bottom: 12px; }
+    .switch-label { font-size: 13.5px; font-weight: 800; color: #4c4660; }
+    .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 24px; }
+    .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; }
+    input:checked + .slider { background-color: #0d9488; }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    /* Inline Sliders */
+    .range-slider-group { margin-top: 14px; }
+    .range-slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .range-slider-title { font-size: 13px; font-weight: 800; color: #5c5570; }
+    .range-slider-val { font-size: 13px; font-family: 'Space Mono', monospace; font-weight: 700; color: #0d9488; }
+    .range-input { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; background: #e2f1ee; outline: none; }
+    .range-input::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #0d9488; cursor: pointer; transition: transform .1s; }
+    .range-input::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+    /* ─── Add City Form UI ─── */
+    .add-city-box { display: flex; flex-direction: column; gap: 14px; padding: 18px; background: #fafdfc; border: 2px dashed #99f6e4; border-radius: 18px; margin-bottom: 24px; }
+    .btn-add-city { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 14.5px; padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer; background: #0d9488; color: #fff; box-shadow: 0 4px 0 #0b7a70; transition: transform .15s, box-shadow .15s; text-align: center; }
+    .btn-add-city:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #0b7a70; }
+    .btn-add-city:active { transform: translateY(2px); box-shadow: 0 2px 0 #0b7a70; }
+
+    /* ─── Itinerary List ─── */
+    .itinerary-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+    .itinerary-item { background: #fff; border: 2.5px solid #e2f1ee; border-radius: 18px; overflow: hidden; transition: transform .2s, box-shadow .2s; }
+    .itinerary-item.dragging { opacity: 0.5; }
+    .itinerary-item-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: #fafdfc; cursor: pointer; user-select: none; border-bottom: 1.5px solid #e2f1ee; }
+    .itinerary-item-info { display: flex; align-items: center; gap: 12px; }
+    .itinerary-city-icon { font-size: 20px; }
+    .itinerary-city-name { font-size: 15px; font-weight: 900; color: #1a1225; }
+    .itinerary-city-details { font-size: 12.5px; font-weight: 700; color: #6b6580; margin-top: 2px; }
+    .itinerary-item-actions { display: flex; align-items: center; gap: 8px; }
+    .itinerary-badge { font-size: 10px; font-weight: 900; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.5px; }
+    .badge-backpacker { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .badge-midrange { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .badge-luxury { background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; }
+    .badge-custom { background: #fff1f2; color: #be185d; border: 1px solid #fecdd3; }
+    
+    .action-icon-btn { border: none; background: transparent; cursor: pointer; padding: 6px; border-radius: 8px; transition: background .15s; display: flex; align-items: center; justify-content: center; }
+    .action-icon-btn:hover { background: #f0f7f5; }
+    .action-icon-btn svg { width: 16px; height: 16px; stroke: #6b6580; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .btn-delete:hover svg { stroke: #ef4444; }
+    
+    .itinerary-item-body { padding: 20px; display: none; background: #fff; border-top: 1.5px solid #e2f1ee; }
+    .itinerary-item.expanded .itinerary-item-body { display: block; }
+
+    /* Drag Handle */
+    .drag-handle { cursor: grab; display: flex; align-items: center; justify-content: center; padding: 4px; }
+    .drag-handle svg { width: 14px; height: 14px; fill: #cbd5e1; }
+
+    /* ─── Inter-City Transport Rows ─── */
+    .transit-divider { display: flex; align-items: center; justify-content: center; margin: 4px 0; position: relative; padding: 8px 12px; }
+    .transit-line { position: absolute; left: 40px; top: 0; bottom: 0; width: 3px; background: repeating-linear-gradient(180deg, #99f6e4, #99f6e4 6px, transparent 6px, transparent 12px); z-index: 1; }
+    .transit-box { background: #f0fbf9; border: 2px solid #99f6e4; border-radius: 16px; width: 100%; margin-left: 56px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 2; position: relative; }
+    .transit-left { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; color: #0f766e; }
+    .transit-left span { font-size: 16px; }
+    .transit-controls { display: flex; align-items: center; gap: 12px; }
+    .transit-select { font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800; padding: 6px 12px; border: 1.5px solid #99f6e4; border-radius: 10px; background: #fff; outline: none; cursor: pointer; }
+    .transit-price-input { font-family: 'Space Mono', monospace; font-size: 13.5px; font-weight: 700; width: 130px; padding: 5px 10px 5px 28px; border: 1.5px solid #99f6e4; border-radius: 10px; text-align: right; outline: none; }
+
+    /* ─── Result Dashboard (Right Column) ─── */
+    .dashboard-panel { position: sticky; top: 20px; }
+    .result-card { background: #134e4a; color: #fff; border-radius: 28px; padding: 32px; box-shadow: 0 12px 30px rgba(13,148,136,0.15); margin-bottom: 24px; position: relative; overflow: hidden; }
+    .result-card::after { content: ''; position: absolute; top: -50%; right: -30%; width: 220px; height: 220px; background: rgba(255,255,255,0.05); border-radius: 50%; pointer-events: none; }
+    
+    .total-lbl { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; opacity: 0.85; font-family: 'Space Mono', monospace; margin-bottom: 8px; }
+    .total-val { font-size: clamp(32px, 3.8vw, 42px); font-weight: 900; letter-spacing: -1.5px; line-height: 1.1; color: #2dd4bf; }
+    .total-sub { font-size: 14.5px; font-weight: 700; opacity: 0.9; margin-top: 8px; display: flex; justify-content: space-between; }
+    .total-sub span { color: #fef08a; }
+
+    /* Stats Grid */
+    .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; padding-top: 20px; border-top: 1.5px dashed rgba(255,255,255,0.15); }
+    .stat-box { display: flex; flex-direction: column; }
+    .stat-lbl { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; opacity: 0.75; margin-bottom: 4px; }
+    .stat-val { font-size: 15px; font-weight: 900; color: #fff; }
+
+    /* Breakdown Visuals */
+    .breakdown-card { background: #fff; border: 2.5px solid #e2f1ee; border-radius: 24px; padding: 28px; box-shadow: 0 10px 30px rgba(13,148,136,0.02); margin-bottom: 24px; }
+    .breakdown-title { font-size: 15px; font-weight: 900; color: #1a1225; margin-bottom: 18px; text-transform: uppercase; letter-spacing: 1px; font-family: 'Space Mono', monospace; display: flex; align-items: center; justify-content: space-between; }
+    .breakdown-title span { font-size: 12px; text-transform: none; color: #6b6580; }
+    
+    .progress-bar-group { display: flex; flex-direction: column; gap: 12px; }
+    .bar-row { display: flex; flex-direction: column; gap: 4px; }
+    .bar-lbl-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 800; color: #5c5570; }
+    .bar-lbl-row span:last-child { font-family: 'Space Mono', monospace; color: #0d9488; }
+    .bar-outer { width: 100%; height: 8px; background: #e2f1ee; border-radius: 4px; overflow: hidden; }
+    .bar-inner { height: 100%; background: #0d9488; border-radius: 4px; transition: width .3s ease; }
+    .bar-inner.c-accom { background: #06b6d4; }
+    .bar-inner.c-food { background: #0d9488; }
+    .bar-inner.c-trans { background: #f59e0b; }
+    .bar-inner.c-act { background: #ec4899; }
+    .bar-inner.c-transit { background: #8b5cf6; }
+    .bar-inner.c-souvenir { background: #10b981; }
+    .bar-inner.c-emergency { background: #ef4444; }
+
+    /* Tips Box */
+    .tips-card { background: #f0fdfa; border: 2px solid #ccfbf1; border-radius: 20px; padding: 20px; margin-bottom: 24px; position: relative; }
+    .tips-card-title { font-size: 14px; font-weight: 900; color: #0f766e; display: flex; align-items: center; gap: 6px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; font-family: 'Space Mono', monospace; }
+    .tips-content { font-size: 13px; color: #0f766e; line-height: 1.6; font-weight: 700; }
+    .tips-nav { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+    .tips-btn { border: none; background: #ccfbf1; color: #0f766e; cursor: pointer; border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: 800; transition: background .15s; }
+    .tips-btn:hover { background: #99f6e4; }
+
+    /* Button Rows */
+    .action-btn-row { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .btn-primary-action { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 14.5px; padding: 14px 20px; border-radius: 14px; border: none; cursor: pointer; text-align: center; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: transform .15s, box-shadow .15s; }
+    .btn-green { background: #0d9488; color: #fff; box-shadow: 0 5px 0 #0b7a70; }
+    .btn-green:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #0b7a70; }
+    .btn-green:active { transform: translateY(2px); box-shadow: 0 3px 0 #0b7a70; }
+    .btn-outline { background: #fff; border: 2.5px solid #d1e5e0; color: #6b6580; box-shadow: 0 4px 0 #d1e5e0; }
+    .btn-outline:hover { border-color: #99f6e4; color: #0d9488; transform: translateY(-2px); box-shadow: 0 6px 0 #99f6e4; background: #fafdfc; }
+    .btn-outline:active { transform: translateY(2px); box-shadow: 0 2px 0 #99f6e4; }
+    
+    .btn-danger-outline { background: #fff; border: 2.5px solid #fee2e2; color: #ef4444; box-shadow: 0 4px 0 #fee2e2; width: 100%; }
+    .btn-danger-outline:hover { border-color: #fca5a5; background: #fff5f5; transform: translateY(-2px); box-shadow: 0 6px 0 #fca5a5; }
+    .btn-danger-outline:active { transform: translateY(2px); box-shadow: 0 2px 0 #fca5a5; }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 28px; right: 28px; background: #1a1225; color: #fff; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; padding: 14px 22px; border-radius: 14px; box-shadow: 0 12px 40px rgba(26,18,37,.3); z-index: 9999; transform: translateY(80px); opacity: 0; transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .3s; pointer-events: none; display: flex; align-items: center; gap: 10px; max-width: 320px; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* Empty State */
+    .empty-state { text-align: center; padding: 40px 20px; color: #8b8099; }
+    .empty-state-emoji { font-size: 44px; margin-bottom: 12px; animation: bounce 2s infinite; }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .empty-state-title { font-size: 16px; font-weight: 900; color: #4c4660; margin-bottom: 6px; }
+    .empty-state-desc { font-size: 13.5px; font-weight: 700; line-height: 1.5; max-width: 300px; margin: 0 auto; }
+
+    /* Sticky Footer style for small screens if needed */
+    .footer { border-top: 2px dashed #e2f1ee; padding-top: 30px; margin-top: 50px; text-align: center; font-size: 13.5px; color: #8b8099; font-weight: 700; }
+    .ft-heart { color: #ef4444; }
+    .ft-brand { font-weight: 900; color: #1a1225; }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .page { padding: 0 16px 60px; }
+      .calculator-grid { grid-template-columns: 1fr; }
+      .dashboard-panel { position: static; margin-top: 10px; }
+    }
+
+    @media (max-width: 600px) {
+      .form-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .action-btn-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .transit-box {
+        flex-direction: column;
+        align-items: stretch;
+        margin-left: 0;
+        padding: 12px;
+      }
+      .transit-line {
+        display: none;
+      }
+      .transit-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        width: 100%;
+        margin-top: 8px;
+      }
+      .transit-select, .transit-price-input {
+        width: 100% !important;
+      }
+      .nav-right {
+        gap: 8px;
+      }
+      .btn-back {
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+      .tool-header-inner {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .tool-icon-big {
+        margin-bottom: 12px;
+      }
+    }
+
+    /* ─── Dark Mode Overrides ─── */
+    html.dark-mode body, body.dark-mode { background: #120c1a !important; color: #e2daf0 !important; }
+    .dark-mode nav .logo { color: #e2daf0 !important; }
+    .dark-mode nav .logo-box { background: #231930 !important; box-shadow: 0 4px 12px rgba(13,148,136,.2); }
+    .dark-mode .btn-back { color: #a59cb5 !important; }
+    .dark-mode .btn-back:hover { background: #231930 !important; color: #2dd4bf !important; }
+    .dark-mode .tool-header-text h1 { color: #fff !important; }
+    .dark-mode .tool-header-text p { color: #a59cb5 !important; }
+    .dark-mode .tool-icon-big { background: #231930 !important; border-color: #0f766e !important; box-shadow: 0 6px 20px rgba(13,148,136,.06); }
+    .dark-mode .tool-category-badge { color: #2dd4bf !important; background: #231930 !important; border-color: #0f766e !important; }
+    
+    .dark-mode .main-card, .dark-mode .breakdown-card { background: #1d162a !important; border-color: #2b223d !important; color: #e2daf0 !important; }
+    .dark-mode .card-title { color: #fff !important; }
+    .dark-mode .form-group label { color: #a59cb5 !important; }
+    .dark-mode .form-input, .dark-mode .form-select, .dark-mode .transit-select, .dark-mode .transit-price-input { background: #120c1a !important; border-color: #2b223d !important; color: #fff !important; }
+    .dark-mode .form-input:focus, .dark-mode .form-select:focus, .dark-mode .transit-select:focus, .dark-mode .transit-price-input:focus { border-color: #0d9488 !important; }
+    
+    .dark-mode .segmented-control { background: #120c1a !important; border-color: #2b223d !important; }
+    .dark-mode .segment-btn { color: #a59cb5 !important; }
+    .dark-mode .segment-btn:hover:not(.active) { background: #231930 !important; color: #2dd4bf !important; }
+    
+    .dark-mode .switch-group { background: #120c1a !important; border-color: #2b223d !important; }
+    .dark-mode .switch-label { color: #a59cb5 !important; }
+    
+    .dark-mode .add-city-box { background: #171123 !important; border-color: #0f766e !important; }
+    .dark-mode .itinerary-item { background: #1d162a !important; border-color: #2b223d !important; }
+    .dark-mode .itinerary-item-header { background: #171123 !important; border-bottom-color: #2b223d !important; }
+    .dark-mode .itinerary-city-name { color: #fff !important; }
+    .dark-mode .itinerary-city-details { color: #a59cb5 !important; }
+    .dark-mode .action-icon-btn:hover { background: #2b223d !important; }
+    .dark-mode .itinerary-item-body { background: #1d162a !important; border-top-color: #2b223d !important; }
+    .dark-mode .range-slider-title { color: #a59cb5 !important; }
+    .dark-mode .range-input { background: #2b223d !important; }
+    
+    .dark-mode .transit-box { background: #171123 !important; border-color: #0f766e !important; }
+    .dark-mode .transit-left { color: #2dd4bf !important; }
+    
+    .dark-mode .result-card { background: #1a0f2e !important; border: 2.5px solid #2b223d !important; box-shadow: 0 12px 30px rgba(0,0,0,0.2) !important; }
+    .dark-mode .total-val { color: #2dd4bf !important; }
+    
+    .dark-mode .bar-outer { background: #2b223d !important; }
+    .dark-mode .bar-lbl-row { color: #a59cb5 !important; }
+    
+    .dark-mode .tips-card { background: #132424 !important; border-color: #0f4d44 !important; }
+    .dark-mode .tips-card-title { color: #2dd4bf !important; }
+    .dark-mode .tips-content { color: #a5e7de !important; }
+    .dark-mode .tips-btn { background: #0f4d44 !important; color: #2dd4bf !important; }
+    .dark-mode .tips-btn:hover { background: #115e54 !important; }
+
+    .dark-mode .btn-outline { background: #1d162a !important; border-color: #2b223d !important; color: #a59cb5 !important; box-shadow: 0 4px 0 #2b223d !important; }
+    .dark-mode .btn-outline:hover { border-color: #0d9488 !important; color: #2dd4bf !important; background: #231930 !important; box-shadow: 0 6px 0 #0d9488 !important; }
+    .dark-mode .btn-danger-outline { background: #1d162a !important; border-color: #4a1f28 !important; color: #f87171 !important; box-shadow: 0 4px 0 #4a1f28 !important; }
+    .dark-mode .btn-danger-outline:hover { border-color: #ef4444 !important; background: #2d161c !important; box-shadow: 0 6px 0 #ef4444 !important; }
+    
+    .dark-mode .footer { border-top-color: #2b223d !important; }
+    .dark-mode .ft-brand { color: #fff !important; }
+    .dark-mode .toast { background: #231930 !important; border: 1.5px solid #0d9488 !important; color: #fff !important; }
+
+    /* ─── Print View (CSS Khusus Print) ─── */
+    @media print {
+      body { background: #fff !important; color: #000 !important; font-size: 12pt; }
+      .page { max-width: 100% !important; padding: 0 !important; }
+      nav, .btn-back, .tool-header, .main-card, .add-city-box, .action-icon-btn, .transit-controls, .tips-card, .action-btn-row, .btn-danger-outline, footer { display: none !important; }
+      .calculator-grid { display: block !important; }
+      .dashboard-panel { position: static !important; width: 100% !important; }
+      .result-card { background: transparent !important; color: #000 !important; border: 2px solid #000 !important; box-shadow: none !important; margin-bottom: 20px !important; padding: 15px !important; }
+      .result-card::after { display: none !important; }
+      .total-val { color: #000 !important; font-size: 24pt !important; }
+      .stats-row { border-top-color: #000 !important; }
+      .stat-val { color: #000 !important; }
+      .breakdown-card { border: 2px solid #000 !important; box-shadow: none !important; page-break-inside: avoid; }
+      .itinerary-list { display: block !important; }
+      .itinerary-item { border: 2px solid #000 !important; box-shadow: none !important; margin-bottom: 10px !important; page-break-inside: avoid; }
+      .itinerary-item-header { background: #f5f5f5 !important; border-bottom: 1px solid #000 !important; }
+      .itinerary-item-body { display: block !important; border-top: 1px solid #000 !important; }
+      .transit-divider { page-break-inside: avoid; }
+      .transit-box { border: 1px dashed #000 !important; background: transparent !important; margin-left: 20px !important; }
+      .transit-line { display: none !important; }
+      .range-slider-group { margin-top: 8px !important; }
+      .range-input { display: none !important; }
+    }
+  </style>
+  <link rel="icon" href="../favicon.png" type="image/png" />
+</head>
+<body>
+<div class="page">
+  <nav>
+    <a class="logo" href="../index.html#tools-section">
+      <div class="logo-box">
+        <img src="../logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" />
+      </div>
+      <span>ToolboxID</span>
+    </a>
+    <a class="btn-back" href="../index.html#tools-section">← Kembali</a>
+  </nav>
+
+  <div class="tool-header">
+    <div class="tool-header-inner">
+      <div class="tool-icon-big">🧭</div>
+      <div class="tool-header-text">
+        <div class="tool-category-badge">🏝️ Travel · Keuangan</div>
+        <h1>Kalkulator Travel Budget Indonesia</h1>
+        <p>Simulasikan estimasi biaya keliling berbagai kota di Indonesia sesuai gaya liburan Anda. Hitung sharing cost akomodasi dan kendaraan bersama rombongan secara akurat.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="calculator-grid">
+    <!-- Kolom Kiri: Input Setup & Itinerary -->
+    <div>
+      <!-- Card 1: Setup Umum -->
+      <div class="main-card">
+        <h2 class="card-title">👥 Pengaturan Rombongan</h2>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="travelers">Jumlah Traveler</label>
+            <div class="input-wrap">
+              <input type="number" id="travelers" class="form-input form-input-suffix" value="1" min="1" max="100" onchange="calculateBudget()" />
+              <span class="input-suffix">Orang</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="globalStyle">Gaya Traveling Standar</label>
+            <select id="globalStyle" class="form-select" onchange="updateGlobalStyle()">
+              <option value="backpacker">🎒 Backpacker (Sederhana)</option>
+              <option value="midrange" selected>🏨 Mid-Range (Nyaman)</option>
+              <option value="luxury">✨ Luxury (Mewah)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="switch-group">
+          <span class="switch-label">Bagi Akomodasi (1 Kamar Berdua)</span>
+          <label class="switch">
+            <input type="checkbox" id="shareAccom" checked onchange="calculateBudget()" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="switch-group">
+          <span class="switch-label">Bagi Transportasi Lokal (Maks 4 Orang/Mobil)</span>
+          <label class="switch">
+            <input type="checkbox" id="shareTransport" checked onchange="calculateBudget()" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="range-slider-group">
+          <div class="range-slider-header">
+            <span class="range-slider-title">Oleh-oleh & Belanja</span>
+            <span class="range-slider-val" id="souvenirVal">Rp 500.000 / orang</span>
+          </div>
+          <input type="range" id="souvenirInput" class="range-input" min="0" max="5000000" step="100000" value="500000" oninput="updateSouvenirs(this.value)" />
+        </div>
+
+        <div class="range-slider-group" style="margin-top: 20px;">
+          <div class="range-slider-header">
+            <span class="range-slider-title">Dana Darurat (Buffer)</span>
+            <span class="range-slider-val" id="emergencyVal">10%</span>
+          </div>
+          <input type="range" id="emergencyInput" class="range-input" min="0" max="30" step="5" value="10" oninput="updateEmergency(this.value)" />
+        </div>
+      </div>
+
+      <!-- Card 2: Tambah Kota -->
+      <div class="main-card">
+        <h2 class="card-title">📍 Rencana Rute Perjalanan</h2>
+        
+        <div class="add-city-box">
+          <div class="form-group">
+            <label for="citySelect">Pilih Kota Tujuan</label>
+            <select id="citySelect" class="form-select"></select>
+          </div>
+          
+          <div class="form-row" style="margin-bottom: 0;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="cityDuration">Durasi Tinggal</label>
+              <div class="input-wrap">
+                <input type="number" id="cityDuration" class="form-input form-input-suffix" value="3" min="1" max="60" />
+                <span class="input-suffix">Hari</span>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="cityStyle">Gaya Perjalanan</label>
+              <select id="cityStyle" class="form-select">
+                <option value="default">Ikuti Pengaturan Standar</option>
+                <option value="backpacker">🎒 Backpacker</option>
+                <option value="midrange">🏨 Mid-Range</option>
+                <option value="luxury">✨ Luxury</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="btn-add-city" onclick="addCity()">Tambah Kota ke Rencana ＋</button>
+        </div>
+
+        <!-- List Rencana Perjalanan -->
+        <div class="itinerary-list" id="itineraryList">
+          <!-- Item itinerary diisi lewat Javascript -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Kolom Kanan: Ringkasan Hasil & Dashboard -->
+    <div class="dashboard-panel">
+      <!-- Ringkasan Anggaran -->
+      <div class="result-card">
+        <div class="total-lbl">Total Anggaran Rencana Perjalanan</div>
+        <div class="total-val" id="totalVal">Rp 0</div>
+        
+        <div class="total-sub">
+          <span id="perPersonVal">Rp 0 / orang</span>
+          <span id="totalDaysVal">0 Hari Perjalanan</span>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-box">
+            <span class="stat-lbl">Akomodasi (Total)</span>
+            <span class="stat-val" id="statLodging">Rp 0</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-lbl">Konsumsi (Total)</span>
+            <span class="stat-val" id="statFood">Rp 0</span>
+          </div>
+        </div>
+
+        <div class="stats-row" style="padding-top: 14px;">
+          <div class="stat-box">
+            <span class="stat-lbl">Transportasi Lokal</span>
+            <span class="stat-val" id="statLocalTrans">Rp 0</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-lbl">Transit Antar Kota</span>
+            <span class="stat-val" id="statTransitTrans">Rp 0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tips Travel Cerdas -->
+      <div class="tips-card" id="tipsCard" style="display: none;">
+        <div class="tips-card-title">💡 Info & Tips Lokal: <span id="tipsCityName">Jakarta</span></div>
+        <div class="tips-content" id="tipsText"></div>
+        <div class="tips-nav">
+          <button class="tips-btn" onclick="prevTip()">◀ Prev</button>
+          <button class="tips-btn" onclick="nextTip()">Next ▶</button>
+        </div>
+      </div>
+
+      <!-- Breakdown Kategori & Kota -->
+      <div class="breakdown-card">
+        <h3 class="breakdown-title">📊 Rincian Kategori <span>Proporsi</span></h3>
+        <div class="progress-bar-group" id="categoryBreakdown">
+          <!-- Dinamis diisi JS -->
+        </div>
+      </div>
+
+      <div class="breakdown-card" id="cityBreakdownCard" style="display: none;">
+        <h3 class="breakdown-title">🏙️ Rincian Anggaran per Kota <span>Total</span></h3>
+        <div class="progress-bar-group" id="cityBreakdown">
+          <!-- Dinamis diisi JS -->
+        </div>
+      </div>
+
+      <!-- Tombol Aksi -->
+      <div class="action-btn-row">
+        <button class="btn-primary-action btn-green" onclick="sharePlan()">🔗 Bagikan ↗</button>
+        <button class="btn-primary-action btn-outline" onclick="window.print()">🖨️ Cetak PDF</button>
+      </div>
+      <button class="btn-danger-outline btn-primary-action" onclick="confirmReset()">🗑️ Reset Rencana</button>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>Dibuat dengan <span class="ft-heart">❤️</span> oleh <span class="ft-brand">Ali Akbar</span> · Gratis untuk semua orang</p>
+  </footer>
+</div>
+
+<div class="toast" id="toast">✅ Tautan rencana berhasil disalin!</div>
+
+<script>
+  /* ─── Database Kota Indonesia ─── */
+  const CITIES_DB = {
+    'jakarta': {
+      name: 'Jakarta',
+      region: 'Jawa',
+      multiplier: 1.3,
+      tips: 'Jakarta memiliki tarif taksi online dan makanan restoran yang cukup tinggi. Manfaatkan busway (TransJakarta) yang hanya Rp 3.500 ke mana saja untuk menekan budget transportasi.',
+      costs: {
+        backpacker: { lodging: 120000, food: 60000, transport: 25000, activities: 20000 },
+        midrange: { lodging: 350000, food: 150000, transport: 70000, activities: 60000 },
+        luxury: { lodging: 1500000, food: 500000, transport: 500000, activities: 250000 }
+      }
+    },
+    'malang': {
+      name: 'Malang',
+      region: 'Jawa',
+      multiplier: 0.8,
+      tips: 'Malang terkenal dengan kuliner murah meriah dan udara sejuk. Di daerah kampus, makanan berkisar Rp 10k-20k sekali makan. Sewa motor (~Rp 70k-85k/hari) sangat disarankan untuk jalan-jalan ke Batu.',
+      costs: {
+        backpacker: { lodging: 70000, food: 35000, transport: 15000, activities: 15000 },
+        midrange: { lodging: 200000, food: 80000, transport: 50000, activities: 40000 },
+        luxury: { lodging: 800000, food: 250000, transport: 400000, activities: 200000 }
+      }
+    },
+    'yogyakarta': {
+      name: 'Yogyakarta',
+      region: 'Jawa',
+      multiplier: 0.75,
+      tips: 'Yogyakarta adalah salah satu destinasi paling ramah kantong. Makanan angkringan sangat murah. Sewa motor (~Rp 70k/hari) atau TransJogja adalah pilihan transportasi terbaik.',
+      costs: {
+        backpacker: { lodging: 60000, food: 30000, transport: 15000, activities: 15000 },
+        midrange: { lodging: 180000, food: 70000, transport: 45000, activities: 50000 },
+        luxury: { lodging: 750000, food: 220000, transport: 400000, activities: 180000 }
+      }
+    },
+    'bali_seminyak': {
+      name: 'Bali (Seminyak/Kuta)',
+      region: 'Bali & Nusa Tenggara',
+      multiplier: 1.4,
+      tips: 'Bali Selatan berorientasi turis mancanegara. Harga makanan di kafe/restoran cukup premium. Gunakan rental motor (~Rp 80k-100k/hari) agar terhindar dari kemacetan parah di wilayah ini.',
+      costs: {
+        backpacker: { lodging: 110000, food: 70000, transport: 30000, activities: 30000 },
+        midrange: { lodging: 450000, food: 200000, transport: 85000, activities: 120000 },
+        luxury: { lodging: 2000000, food: 700000, transport: 600000, activities: 500000 }
+      }
+    },
+    'bali_ubud': {
+      name: 'Bali (Ubud)',
+      region: 'Bali & Nusa Tenggara',
+      multiplier: 1.1,
+      tips: 'Ubud menyajikan nuansa budaya dan alam. Makanan sehat dan organik sangat populer tetapi harganya lebih mahal dibanding warung makan lokal biasa.',
+      costs: {
+        backpacker: { lodging: 90000, food: 55000, transport: 30000, activities: 25000 },
+        midrange: { lodging: 350000, food: 140000, transport: 80000, activities: 80000 },
+        luxury: { lodging: 1400000, food: 450000, transport: 500000, activities: 300000 }
+      }
+    },
+    'bandung': {
+      name: 'Bandung',
+      region: 'Jawa',
+      multiplier: 1.1,
+      tips: 'Bandung memiliki beragam kafe estetis (lifestyle cafes). Akomodasi di Lembang atau Dago Pakar memiliki harga bervariasi. Kemacetan akhir pekan dapat meningkatkan tarif taksi online.',
+      costs: {
+        backpacker: { lodging: 85000, food: 45000, transport: 20000, activities: 20000 },
+        midrange: { lodging: 280000, food: 110000, transport: 60000, activities: 50000 },
+        luxury: { lodging: 1000000, food: 350000, transport: 450000, activities: 200000 }
+      }
+    },
+    'surabaya': {
+      name: 'Surabaya',
+      region: 'Jawa',
+      multiplier: 1.15,
+      tips: 'Sebagai kota bisnis terbesar kedua, biaya hidup Surabaya mirip Jakarta. Sentra kuliner malam (seperti rawon) relatif terjangkau, tetapi hotel kelas bisnis cenderung premium.',
+      costs: {
+        backpacker: { lodging: 90000, food: 50000, transport: 20000, activities: 15000 },
+        midrange: { lodging: 300000, food: 120000, transport: 65000, activities: 40000 },
+        luxury: { lodging: 1100000, food: 380000, transport: 500000, activities: 150000 }
+      }
+    },
+    'labuan_bajo': {
+      name: 'Labuan Bajo',
+      region: 'Bali & Nusa Tenggara',
+      multiplier: 1.5,
+      tips: 'Labuan Bajo adalah gerbang menuju Komodo. Sebagian besar biaya dialokasikan untuk sewa kapal (LiveOnBoard). Ikuti tur kapal bersama (sharing open trip) agar biaya tidak membengkak.',
+      costs: {
+        backpacker: { lodging: 130000, food: 80000, transport: 40000, activities: 200000 },
+        midrange: { lodging: 550000, food: 220000, transport: 80000, activities: 500000 },
+        luxury: { lodging: 2200000, food: 600000, transport: 600000, activities: 1800000 }
+      }
+    },
+    'raja_ampat': {
+      name: 'Raja Ampat',
+      region: 'Papua & Maluku',
+      multiplier: 2.1,
+      tips: 'Biaya logistik di Papua sangat tinggi. Harga homestay lokal biasanya sudah termasuk makan 3x sehari. Biaya sewa speedboat antarpulau adalah pengeluaran terbesar di sini.',
+      costs: {
+        backpacker: { lodging: 350000, food: 0, transport: 50000, activities: 100000 }, // Homestay include makan
+        midrange: { lodging: 800000, food: 0, transport: 300000, activities: 250000 }, // Homestay plus/resort include makan
+        luxury: { lodging: 3500000, food: 0, transport: 1500000, activities: 800000 } // Luxury resort include gourmet meals
+      }
+    },
+    'lombok': {
+      name: 'Lombok',
+      region: 'Bali & Nusa Tenggara',
+      multiplier: 0.9,
+      tips: 'Lombok menawarkan keindahan mirip Bali dengan biaya lebih murah. Kuliner Ayam Taliwang cukup terjangkau. Sewa motor di pelabuhan/bandara mempermudah perjalanan.',
+      costs: {
+        backpacker: { lodging: 70000, food: 40000, transport: 25000, activities: 20000 },
+        midrange: { lodging: 250000, food: 95000, transport: 60000, activities: 60000 },
+        luxury: { lodging: 1100000, food: 320000, transport: 450000, activities: 250000 }
+      }
+    },
+    'makassar': {
+      name: 'Makassar',
+      region: 'Sulawesi',
+      multiplier: 0.95,
+      tips: 'Makassar terkenal dengan kuliner coto dan seafood segar yang terjangkau. Transportasi umum terbatas, sehingga ojek/taksi online merupakan andalan berkeliling kota.',
+      costs: {
+        backpacker: { lodging: 80000, food: 45000, transport: 20000, activities: 15000 },
+        midrange: { lodging: 250000, food: 100000, transport: 60000, activities: 30000 },
+        luxury: { lodging: 950000, food: 300000, transport: 450000, activities: 150000 }
+      }
+    },
+    'medan': {
+      name: 'Medan',
+      region: 'Sumatra',
+      multiplier: 0.95,
+      tips: 'Medan memiliki surga kuliner legendaris dengan harga sedang. Untuk menuju Danau Toba dari Kualanamu, sebaiknya gunakan travel bersama / sewa mobil rombongan.',
+      costs: {
+        backpacker: { lodging: 80000, food: 50000, transport: 20000, activities: 15000 },
+        midrange: { lodging: 260000, food: 110000, transport: 60000, activities: 35000 },
+        luxury: { lodging: 1000000, food: 320000, transport: 450000, activities: 150000 }
+      }
+    }
+  };
+
+  /* ─── State Aplikasi ─── */
+  let itinerary = [];
+  let currentTipIndex = 0;
+  let activeTipCities = [];
+
+  /* ─── Inisialisasi Page ─── */
+  document.addEventListener('DOMContentLoaded', () => {
+    // Populate dropdown kota
+    const select = document.getElementById('citySelect');
+    
+    // Group cities by region
+    const regions = {};
+    for (let key in CITIES_DB) {
+      const city = CITIES_DB[key];
+      if (!regions[city.region]) regions[city.region] = [];
+      regions[city.region].push({ key, name: city.name });
+    }
+
+    for (let region in regions) {
+      const optGroup = document.createElement('optgroup');
+      optGroup.label = region;
+      regions[region].forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.key;
+        opt.textContent = c.name;
+        optGroup.appendChild(opt);
+      });
+      select.appendChild(optGroup);
+    }
+
+    // Load URL Shared Data / LocalStorage
+    loadSharedOrSavedPlan();
+    
+    // Calculate & render
+    calculateBudget();
+  });
+
+  /* ─── Load & Save Data ─── */
+  function loadSharedOrSavedPlan() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedData = urlParams.get('p');
+    
+    if (sharedData) {
+      try {
+        const decoded = JSON.parse(atob(sharedData));
+        if (decoded && Array.isArray(decoded.itinerary)) {
+          itinerary = decoded.itinerary;
+          document.getElementById('travelers').value = decoded.travelers || 1;
+          document.getElementById('globalStyle').value = decoded.globalStyle || 'midrange';
+          document.getElementById('shareAccom').checked = decoded.shareAccom !== false;
+          document.getElementById('shareTransport').checked = decoded.shareTransport !== false;
+          document.getElementById('souvenirInput').value = decoded.souvenir !== undefined ? decoded.souvenir : 500000;
+          document.getElementById('emergencyInput').value = decoded.emergency !== undefined ? decoded.emergency : 10;
+          
+          updateSouvenirs(document.getElementById('souvenirInput').value);
+          updateEmergency(document.getElementById('emergencyInput').value);
+          
+          showToast('🎉', 'Rencana perjalanan berhasil dimuat!');
+          // Clear query param so refreshes don't re-trigger notification
+          window.history.replaceState({}, document.title, window.location.pathname);
+          return;
+        }
+      } catch (e) {
+        console.error('Gagal mendekode data share:', e);
+      }
+    }
+
+    // Load from LocalStorage
+    const saved = localStorage.getItem('toolboxid-travel-budget-plan');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        itinerary = parsed.itinerary || [];
+        document.getElementById('travelers').value = parsed.travelers || 1;
+        document.getElementById('globalStyle').value = parsed.globalStyle || 'midrange';
+        document.getElementById('shareAccom').checked = parsed.shareAccom !== false;
+        document.getElementById('shareTransport').checked = parsed.shareTransport !== false;
+        document.getElementById('souvenirInput').value = parsed.souvenir !== undefined ? parsed.souvenir : 500000;
+        document.getElementById('emergencyInput').value = parsed.emergency !== undefined ? parsed.emergency : 10;
+        
+        updateSouvenirs(document.getElementById('souvenirInput').value);
+        updateEmergency(document.getElementById('emergencyInput').value);
+      } catch (e) {
+        console.error('Gagal memuat rencana dari penyimpanan lokal:', e);
+      }
+    } else {
+      // Default: tambahkan Jakarta & Malang sebagai demo awal biar gak sepi
+      itinerary = [
+        { id: generateId(), cityKey: 'jakarta', days: 3, style: 'default', customCosts: null, transitMethod: 'train', transitCost: 350000 },
+        { id: generateId(), cityKey: 'malang', days: 4, style: 'default', customCosts: null, transitMethod: 'none', transitCost: 0 }
+      ];
+    }
+  }
+
+  function savePlan() {
+    const data = {
+      itinerary,
+      travelers: parseInt(document.getElementById('travelers').value) || 1,
+      globalStyle: document.getElementById('globalStyle').value,
+      shareAccom: document.getElementById('shareAccom').checked,
+      shareTransport: document.getElementById('shareTransport').checked,
+      souvenir: parseInt(document.getElementById('souvenirInput').value) || 0,
+      emergency: parseInt(document.getElementById('emergencyInput').value) || 0
+    };
+    localStorage.setItem('toolboxid-travel-budget-plan', JSON.stringify(data));
+  }
+
+  function generateId() {
+    return '_' + Math.random().toString(36).substr(2, 9);
+  }
+
+  /* ─── Form Handlers ─── */
+  function updateGlobalStyle() {
+    calculateBudget();
+  }
+
+  function updateSouvenirs(val) {
+    document.getElementById('souvenirVal').textContent = rp(val) + ' / orang';
+    calculateBudget();
+  }
+
+  function updateEmergency(val) {
+    document.getElementById('emergencyVal').textContent = val + '%';
+    calculateBudget();
+  }
+
+  /* ─── Tambah & Kelola Kota ─── */
+  function addCity() {
+    const cityKey = document.getElementById('citySelect').value;
+    const days = parseInt(document.getElementById('cityDuration').value) || 1;
+    const style = document.getElementById('cityStyle').value;
+
+    const newCity = {
+      id: generateId(),
+      cityKey,
+      days,
+      style,
+      customCosts: null,
+      transitMethod: 'none',
+      transitCost: 0
+    };
+
+    // Auto default transit jika ada kota sebelumnya
+    if (itinerary.length > 0) {
+      newCity.transitMethod = 'flight'; // default antar kota
+      newCity.transitCost = estimateTransitCost('flight');
+    }
+
+    itinerary.push(newCity);
+    calculateBudget();
+    
+    // Reset durasi input ke default
+    document.getElementById('cityDuration').value = '3';
+    document.getElementById('cityStyle').value = 'default';
+    
+    showToast('📍', `Berhasil menambahkan kota ${CITIES_DB[cityKey].name}!`);
+  }
+
+  function deleteCity(id) {
+    itinerary = itinerary.filter(item => item.id !== id);
+    // Bersihkan transit untuk kota pertama jika ada perubahan posisi
+    if (itinerary.length > 0) {
+      itinerary[0].transitMethod = 'none';
+      itinerary[0].transitCost = 0;
+    }
+    calculateBudget();
+  }
+
+  function moveCity(index, direction) {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= itinerary.length) return;
+    
+    // Tukar posisi
+    const temp = itinerary[index];
+    itinerary[index] = itinerary[targetIndex];
+    itinerary[targetIndex] = temp;
+    
+    // Perbarui transit: kota pertama tidak butuh transit untuk masuk ke trip
+    itinerary[0].transitMethod = 'none';
+    itinerary[0].transitCost = 0;
+    
+    calculateBudget();
+  }
+
+  /* ─── Transit Cost Heuristics ─── */
+  function estimateTransitCost(method) {
+    const travelers = parseInt(document.getElementById('travelers').value) || 1;
+    switch(method) {
+      case 'flight': return 1000000 * travelers;
+      case 'train': return 300000 * travelers;
+      case 'bus': return 180000 * travelers;
+      case 'ferry': return 120000 * travelers;
+      case 'car': return 800000; // Shared flat
+      default: return 0;
+    }
+  }
+
+  function onTransitMethodChange(index, method) {
+    itinerary[index].transitMethod = method;
+    itinerary[index].transitCost = estimateTransitCost(method);
+    calculateBudget();
+  }
+
+  function onTransitCostChange(index, costVal) {
+    const cost = parseFloat(costVal.replace(/[^0-9]/g, '')) || 0;
+    itinerary[index].transitCost = cost;
+    calculateBudget();
+  }
+
+  /* ─── Custom Slider Overrides per Kota ─── */
+  function toggleItineraryItem(element) {
+    const item = element.closest('.itinerary-item');
+    item.classList.toggle('expanded');
+  }
+
+  function initCustomCosts(index) {
+    const item = itinerary[index];
+    const city = CITIES_DB[item.cityKey];
+    const style = item.style === 'default' ? document.getElementById('globalStyle').value : item.style;
+    const base = city.costs[style];
+
+    item.customCosts = {
+      lodging: base.lodging,
+      food: base.food,
+      transport: base.transport,
+      activities: base.activities
+    };
+    
+    renderItinerary();
+    calculateBudget();
+  }
+
+  function resetCustomCosts(index) {
+    itinerary[index].customCosts = null;
+    renderItinerary();
+    calculateBudget();
+  }
+
+  function onCustomCostChange(index, field, value) {
+    const item = itinerary[index];
+    if (!item.customCosts) return;
+    item.customCosts[field] = parseInt(value) || 0;
+    
+    // Update label nominal slider secara cepat
+    document.getElementById(`val-${field}-${item.id}`).textContent = rp(value);
+    
+    // Recalculate total
+    calculateBudget(false); // don't re-render itinerary to avoid sliders resetting cursor
+  }
+
+  /* ─── Formatter ─── */
+  function rp(num) {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(num);
+  }
+
+  /* ─── Perhitungan Anggaran (Inti Logika) ─── */
+  function calculateBudget(shouldRenderItinerary = true) {
+    const travelers = parseInt(document.getElementById('travelers').value) || 1;
+    const globalStyle = document.getElementById('globalStyle').value;
+    const shareAccom = document.getElementById('shareAccom').checked;
+    const shareTransport = document.getElementById('shareTransport').checked;
+    const souvenirsPerPerson = parseInt(document.getElementById('souvenirInput').value) || 0;
+    const emergencyPct = parseInt(document.getElementById('emergencyInput').value) || 0;
+
+    let totalLodging = 0;
+    let totalFood = 0;
+    let totalLocalTrans = 0;
+    let totalActivities = 0;
+    let totalTransit = 0;
+    let totalDays = 0;
+
+    let cityBreakdowns = {};
+
+    itinerary.forEach((item, index) => {
+      const city = CITIES_DB[item.cityKey];
+      const style = item.style === 'default' ? globalStyle : item.style;
+      const baseCosts = city.costs[style];
+
+      // Gunakan custom override jika ada
+      const lodgingBase = item.customCosts ? item.customCosts.lodging : baseCosts.lodging;
+      const foodBase = item.customCosts ? item.customCosts.food : baseCosts.food;
+      const transportBase = item.customCosts ? item.customCosts.transport : baseCosts.transport;
+      const activitiesBase = item.customCosts ? item.customCosts.activities : baseCosts.activities;
+
+      totalDays += item.days;
+
+      // 1. Akomodasi (Sharing Logic)
+      let lodCost = 0;
+      if (style === 'backpacker' || !shareAccom) {
+        // Backpacker bayar per bed (per person)
+        lodCost = lodgingBase * travelers * item.days;
+      } else {
+        // Nyaman / Mewah sewa kamar (1 kamar berdua)
+        const rooms = Math.ceil(travelers / 2);
+        lodCost = lodgingBase * rooms * item.days;
+      }
+
+      // 2. Makanan
+      const foodCost = foodBase * travelers * item.days;
+
+      // 3. Transportasi Lokal (Sharing Logic)
+      let transCost = 0;
+      if (style === 'backpacker' || !shareTransport) {
+        transCost = transportBase * travelers * item.days;
+      } else if (style === 'midrange') {
+        // Berbagi motor (berdua) atau taksi (berempat)
+        const vehicles = Math.ceil(travelers / 2);
+        transCost = transportBase * vehicles * item.days;
+      } else {
+        // Luxury sewa mobil (max 4 orang semobil)
+        const vehicles = Math.ceil(travelers / 4);
+        transCost = transportBase * vehicles * item.days;
+      }
+
+      // 4. Aktivitas
+      const actCost = activitiesBase * travelers * item.days;
+
+      // 5. Transit antar kota (terhitung di kota ke-2 dst)
+      let transitCost = 0;
+      if (index > 0) {
+        transitCost = item.transitCost;
+        totalTransit += transitCost;
+      }
+
+      totalLodging += lodCost;
+      totalFood += foodCost;
+      totalLocalTrans += transCost;
+      totalActivities += actCost;
+
+      // Biaya per kota
+      const cityTotal = lodCost + foodCost + transCost + actCost + transitCost;
+      cityBreakdowns[city.name] = (cityBreakdowns[city.name] || 0) + cityTotal;
+    });
+
+    // 6. Oleh-oleh
+    const totalSouvenirs = souvenirsPerPerson * travelers;
+
+    // Subtotal sebelum dana darurat
+    const subtotal = totalLodging + totalFood + totalLocalTrans + totalActivities + totalTransit + totalSouvenirs;
+    
+    // 7. Dana Darurat
+    const totalEmergency = Math.round(subtotal * (emergencyPct / 100));
+
+    // Total Akhir
+    const grandTotal = subtotal + totalEmergency;
+    const perPerson = Math.round(grandTotal / travelers);
+
+    // Update Text Dashboard
+    document.getElementById('totalVal').textContent = rp(grandTotal);
+    document.getElementById('perPersonVal').textContent = rp(perPerson) + ' / orang';
+    document.getElementById('totalDaysVal').textContent = totalDays + ' Hari Perjalanan';
+
+    document.getElementById('statLodging').textContent = rp(totalLodging);
+    document.getElementById('statFood').textContent = rp(totalFood);
+    document.getElementById('statLocalTrans').textContent = rp(totalLocalTrans);
+    document.getElementById('statTransitTrans').textContent = rp(totalTransit);
+
+    // Render Progress Bar Breakdown
+    renderBreakdowns(grandTotal, totalLodging, totalFood, totalLocalTrans, totalActivities, totalTransit, totalSouvenirs, totalEmergency, cityBreakdowns);
+
+    // Render Itinerary if needed
+    if (shouldRenderItinerary) {
+      renderItinerary();
+      updateTipsBox();
+    }
+
+    // Save
+    savePlan();
+  }
+
+  /* ─── Render Progress Bars ─── */
+  function renderBreakdowns(grandTotal, lodging, food, localTrans, activities, transit, souvenirs, emergency, cityBreakdowns) {
+    const categories = [
+      { name: '🏨 Akomodasi', value: lodging, class: 'c-accom' },
+      { name: '🍱 Konsumsi', value: food, class: 'c-food' },
+      { name: '🛵 Transport Lokal', value: localTrans, class: 'c-trans' },
+      { name: '🏖️ Aktivitas', value: activities, class: 'c-act' },
+      { name: '✈️ Transit Antar Kota', value: transit, class: 'c-transit' },
+      { name: '🎁 Oleh-oleh & Belanja', value: souvenirs, class: 'c-souvenir' },
+      { name: '🚨 Dana Darurat', value: emergency, class: 'c-emergency' }
+    ];
+
+    const container = document.getElementById('categoryBreakdown');
+    container.innerHTML = '';
+
+    if (grandTotal === 0) {
+      container.innerHTML = '<p style="font-size: 13px; color:#8b8099; text-align:center;">Belum ada anggaran.</p>';
+      document.getElementById('cityBreakdownCard').style.display = 'none';
+      return;
+    }
+
+    categories.forEach(c => {
+      const pct = grandTotal > 0 ? ((c.value / grandTotal) * 100).toFixed(1) : 0;
+      if (c.value > 0) {
+        const row = document.createElement('div');
+        row.className = 'bar-row';
+        row.innerHTML = `
+          <div class="bar-lbl-row">
+            <span>${c.name}</span>
+            <span>${rp(c.value)} (${pct}%)</span>
+          </div>
+          <div class="bar-outer">
+            <div class="bar-inner ${c.class}" style="width: ${pct}%"></div>
+          </div>
+        `;
+        container.appendChild(row);
+      }
+    });
+
+    // Render City Breakdown
+    const cityContainer = document.getElementById('cityBreakdown');
+    cityContainer.innerHTML = '';
+    const cityKeys = Object.keys(cityBreakdowns);
+
+    if (cityKeys.length > 0) {
+      document.getElementById('cityBreakdownCard').style.display = 'block';
+      cityKeys.forEach(cityName => {
+        const value = cityBreakdowns[cityName];
+        const pct = grandTotal > 0 ? ((value / grandTotal) * 100).toFixed(1) : 0;
+        
+        const row = document.createElement('div');
+        row.className = 'bar-row';
+        row.innerHTML = `
+          <div class="bar-lbl-row">
+            <span>🌆 ${cityName}</span>
+            <span>${rp(value)} (${pct}%)</span>
+          </div>
+          <div class="bar-outer">
+            <div class="bar-inner" style="width: ${pct}%; background:#0d9488;"></div>
+          </div>
+        `;
+        cityContainer.appendChild(row);
+      });
+    } else {
+      document.getElementById('cityBreakdownCard').style.display = 'none';
+    }
+  }
+
+  /* ─── Render HTML List Itinerary ─── */
+  function renderItinerary() {
+    const list = document.getElementById('itineraryList');
+    list.innerHTML = '';
+
+    if (itinerary.length === 0) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-emoji">🏝️</div>
+          <div class="empty-state-title">Rute Masih Kosong</div>
+          <div class="empty-state-desc">Pilih kota tujuan Anda di atas dan buat estimasi anggaran perjalanan impian Anda!</div>
+        </div>
+      `;
+      return;
+    }
+
+    itinerary.forEach((item, index) => {
+      const city = CITIES_DB[item.cityKey];
+      const style = item.style === 'default' ? document.getElementById('globalStyle').value : item.style;
+      const isCustom = item.customCosts !== null;
+      const baseCosts = city.costs[style];
+
+      // Judul Style Badge
+      let badgeClass = `badge-${style}`;
+      let styleText = style === 'backpacker' ? 'Backpacker' : style === 'midrange' ? 'Mid-Range' : 'Luxury';
+      if (isCustom) {
+        badgeClass = 'badge-custom';
+        styleText = 'Kustom';
+      }
+
+      // Hitung biaya estimasi saat ini untuk header
+      const lodgingCost = item.customCosts ? item.customCosts.lodging : baseCosts.lodging;
+      const foodCost = item.customCosts ? item.customCosts.food : baseCosts.food;
+      const transportCost = item.customCosts ? item.customCosts.transport : baseCosts.transport;
+      const activitiesCost = item.customCosts ? item.customCosts.activities : baseCosts.activities;
+
+      const totalHarian = lodgingCost + foodCost + transportCost + activitiesCost;
+
+      const card = document.createElement('div');
+      card.className = `itinerary-item ${isCustom ? 'custom-border' : ''}`;
+      card.id = `item-${item.id}`;
+
+      // 1. Divider transit jika bukan kota pertama
+      if (index > 0) {
+        const transitDiv = document.createElement('div');
+        transitDiv.className = 'transit-divider';
+        transitDiv.innerHTML = `
+          <div class="transit-line"></div>
+          <div class="transit-box">
+            <div class="transit-left">
+              <span>✈️</span> Perjalanan dari ${CITIES_DB[itinerary[index-1].cityKey].name} ke ${city.name}
+            </div>
+            <div class="transit-controls">
+              <select class="transit-select" onchange="onTransitMethodChange(${index}, this.value)">
+                <option value="flight" ${item.transitMethod === 'flight' ? 'selected' : ''}>✈️ Pesawat</option>
+                <option value="train" ${item.transitMethod === 'train' ? 'selected' : ''}>🚆 Kereta Api</option>
+                <option value="bus" ${item.transitMethod === 'bus' ? 'selected' : ''}>🚌 Bus / Travel</option>
+                <option value="ferry" ${item.transitMethod === 'ferry' ? 'selected' : ''}>🚢 Kapal Ferry</option>
+                <option value="car" ${item.transitMethod === 'car' ? 'selected' : ''}>🚗 Mobil Pribadi</option>
+                <option value="none" ${item.transitMethod === 'none' ? 'selected' : ''}>❌ Tanpa Biaya</option>
+              </select>
+              <div style="position:relative; display:inline-block;">
+                <span style="position:absolute; left:8px; top:5px; font-size:12px; font-weight:800; color:#8b8099;">Rp</span>
+                <input type="text" class="transit-price-input" value="${item.transitCost.toLocaleString('id-ID')}" onchange="onTransitCostChange(${index}, this.value)" />
+              </div>
+            </div>
+          </div>
+        `;
+        list.appendChild(transitDiv);
+      }
+
+      // 2. Detail Card Kota
+      const itemHeader = document.createElement('div');
+      itemHeader.className = 'itinerary-item-header';
+      itemHeader.innerHTML = `
+        <div style="display:flex; align-items:center; gap: 8px;">
+          <div class="drag-handle" title="Urutkan" style="display:none;">
+            <svg viewBox="0 0 24 24"><path d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
+          </div>
+          <div class="itinerary-item-info" onclick="toggleItineraryItem(this)">
+            <span class="itinerary-city-icon">🌆</span>
+            <div>
+              <span class="itinerary-city-name">${city.name}</span>
+              <div class="itinerary-city-details">${item.days} Hari menginap · Biaya Harian: ${rp(totalHarian)}</div>
+            </div>
+          </div>
+        </div>
+        <div class="itinerary-item-actions">
+          <span class="itinerary-badge ${badgeClass}">${styleText}</span>
+          
+          <button class="action-icon-btn" onclick="moveCity(${index}, -1)" title="Pindahkan Ke Atas" ${index === 0 ? 'disabled style="opacity:0.3;"' : ''}>
+            <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"></polyline></svg>
+          </button>
+          <button class="action-icon-btn" onclick="moveCity(${index}, 1)" title="Pindahkan Ke Bawah" ${index === itinerary.length - 1 ? 'disabled style="opacity:0.3;"' : ''}>
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <button class="action-icon-btn btn-delete" onclick="deleteCity('${item.id}')" title="Hapus Kota">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+          </button>
+        </div>
+      `;
+      card.appendChild(itemHeader);
+
+      // Body Slider Penyesuaian
+      const itemBody = document.createElement('div');
+      itemBody.className = 'itinerary-item-body';
+
+      if (!isCustom) {
+        itemBody.innerHTML = `
+          <p style="font-size:13px; color:#6b6580; margin-bottom:12px; font-weight:700;">Biaya kota ini dihitung berdasarkan biaya rata-rata gaya perjalanan <strong>${styleText}</strong>.</p>
+          <button class="btn-primary-action btn-outline" style="padding: 8px 16px; font-size:12.5px; border-radius:10px; width:100%;" onclick="initCustomCosts(${index})">🛠️ Sesuaikan Alokasi Dana Manual</button>
+        `;
+      } else {
+        itemBody.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <p style="font-size:13px; color:#be185d; font-weight:800;">⚙️ Sesuaikan Anggaran Harian (Kustom):</p>
+            <button class="btn-primary-action btn-danger-outline" style="padding: 4px 10px; font-size:11px; border-radius:8px; width:auto; border-width:1.5px; box-shadow:none;" onclick="resetCustomCosts(${index})">Kembalikan ke Default</button>
+          </div>
+          
+          <div class="range-slider-group">
+            <div class="range-slider-header">
+              <span class="range-slider-title">🏨 Kamar Hotel / Penginapan Harian</span>
+              <span class="range-slider-val" id="val-lodging-${item.id}">${rp(item.customCosts.lodging)}</span>
+            </div>
+            <input type="range" class="range-input" min="0" max="${baseCosts.lodging * 4}" step="10000" value="${item.customCosts.lodging}" oninput="onCustomCostChange(${index}, 'lodging', this.value)" />
+          </div>
+
+          <div class="range-slider-group" style="margin-top:14px;">
+            <div class="range-slider-header">
+              <span class="range-slider-title">🍱 Makan & Minum Harian (per orang)</span>
+              <span class="range-slider-val" id="val-food-${item.id}">${rp(item.customCosts.food)}</span>
+            </div>
+            <input type="range" class="range-input" min="0" max="${baseCosts.food * 4}" step="5000" value="${item.customCosts.food}" oninput="onCustomCostChange(${index}, 'food', this.value)" />
+          </div>
+
+          <div class="range-slider-group" style="margin-top:14px;">
+            <div class="range-slider-header">
+              <span class="range-slider-title">🛵 Sewa Kendaraan / Grab Harian</span>
+              <span class="range-slider-val" id="val-transport-${item.id}">${rp(item.customCosts.transport)}</span>
+            </div>
+            <input type="range" class="range-input" min="0" max="${baseCosts.transport * 4}" step="5000" value="${item.customCosts.transport}" oninput="onCustomCostChange(${index}, 'transport', this.value)" />
+          </div>
+
+          <div class="range-slider-group" style="margin-top:14px;">
+            <div class="range-slider-header">
+              <span class="range-slider-title">🎟️ Tiket Wisata & Hiburan Harian (per orang)</span>
+              <span class="range-slider-val" id="val-activities-${item.id}">${rp(item.customCosts.activities)}</span>
+            </div>
+            <input type="range" class="range-input" min="0" max="${baseCosts.activities * 4}" step="5000" value="${item.customCosts.activities}" oninput="onCustomCostChange(${index}, 'activities', this.value)" />
+          </div>
+        `;
+      }
+
+      card.appendChild(itemBody);
+      list.appendChild(card);
+    });
+  }
+
+  /* ─── Tips Box Logic ─── */
+  function updateTipsBox() {
+    const card = document.getElementById('tipsCard');
+    if (itinerary.length === 0) {
+      card.style.display = 'none';
+      return;
+    }
+
+    // Cari list nama kota unik di itinerary
+    activeTipCities = [...new Set(itinerary.map(item => item.cityKey))];
+    if (currentTipIndex >= activeTipCities.length) {
+      currentTipIndex = 0;
+    }
+
+    const cityKey = activeTipCities[currentTipIndex];
+    const city = CITIES_DB[cityKey];
+
+    document.getElementById('tipsCityName').textContent = city.name;
+    document.getElementById('tipsText').textContent = city.tips;
+    card.style.display = 'block';
+
+    const nav = card.querySelector('.tips-nav');
+    if (nav) {
+      nav.style.display = activeTipCities.length > 1 ? 'flex' : 'none';
+    }
+  }
+
+  function nextTip() {
+    if (activeTipCities.length <= 1) return;
+    currentTipIndex = (currentTipIndex + 1) % activeTipCities.length;
+    updateTipsBox();
+  }
+
+  function prevTip() {
+    if (activeTipCities.length <= 1) return;
+    currentTipIndex = (currentTipIndex - 1 + activeTipCities.length) % activeTipCities.length;
+    updateTipsBox();
+  }
+
+  /* ─── Share State via URL hash ─── */
+  function sharePlan() {
+    const data = {
+      itinerary,
+      travelers: parseInt(document.getElementById('travelers').value) || 1,
+      globalStyle: document.getElementById('globalStyle').value,
+      shareAccom: document.getElementById('shareAccom').checked,
+      shareTransport: document.getElementById('shareTransport').checked,
+      souvenir: parseInt(document.getElementById('souvenirInput').value) || 0,
+      emergency: parseInt(document.getElementById('emergencyInput').value) || 0
+    };
+
+    const str = btoa(JSON.stringify(data));
+    const shareUrl = window.location.origin + window.location.pathname + '?p=' + str;
+
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      showToast('✅', 'Tautan rencana berhasil disalin!');
+    }).catch(err => {
+      console.error('Gagal menyalin ke papan klip:', err);
+      showToast('❌', 'Gagal menyalin tautan.');
+    });
+  }
+
+  function showToast(emoji, msg) {
+    const t = document.getElementById('toast');
+    t.innerHTML = `<span class="toast-emoji">${emoji}</span> <span>${msg}</span>`;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  /* ─── Reset ─── */
+  function confirmReset() {
+    if (confirm('Apakah Anda yakin ingin menghapus seluruh rencana perjalanan saat ini?')) {
+      itinerary = [];
+      document.getElementById('travelers').value = 1;
+      document.getElementById('globalStyle').value = 'midrange';
+      document.getElementById('shareAccom').checked = true;
+      document.getElementById('shareTransport').checked = true;
+      document.getElementById('souvenirInput').value = 500000;
+      document.getElementById('emergencyInput').value = 10;
+      
+      updateSouvenirs(500000);
+      updateEmergency(10);
+      
+      calculateBudget();
+      showToast('🗑️', 'Rencana perjalanan berhasil dikosongkan!');
+    }
+  }
+</script>
+</body>
+</html>
