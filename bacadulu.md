@@ -17,7 +17,7 @@ Dokumen ini ditulis khusus agar developer manusia maupun **sistem AI coding assi
 2. **PWA & Offline Support (Android & iOS)**:
    - Dibuat file [manifest.json](file:///d:/ANTIGRAVITY%20VIBE%20CODE/TOOLS_FREE/manifest.json) untuk standarisasi install PWA di HP/Desktop.
    - Dibuat file [sw.js](file:///d:/ANTIGRAVITY%20VIBE%20CODE/TOOLS_FREE/sw.js) (Service Worker) dengan strategi cache *Network-First* yang secara otomatis menyimpan seluruh aset internal dan eksternal (CDN) agar bisa diakses offline.
-   - Menambahkan dukungan instalasi PWA di **iOS (iPhone/iPad)** dengan menyertakan meta tags khusus Apple mobile-web-app, ikon sentuh Apple (`apple-touch-icon`), serta antarmuka modal panduan instalasi step-by-step di Safari iOS yang muncul saat menekan tombol "Install iOS".
+   - Menambahkan dukungan instalasi PWA di **iOS (iPhone/iPad)** dengan menyertakan meta tags khusus Apple mobile-web-app, ikon sentuh Apple khusus yang solid non-transparan (`apple-touch-icon.png` baru) untuk mencegah bug icon default/huruf T pada iOS, serta antarmuka modal panduan instalasi step-by-step di Safari iOS yang muncul saat menekan tombol "Install iOS".
    - PWA telah diregistrasikan di [index.html](file:///d:/ANTIGRAVITY%20VIBE%20CODE/TOOLS_FREE/index.html).
 3. **Penyelarasan Logo & Favicon**:
    - Ikon logo browser (Favicon) telah ditambahkan di semua 24 halaman HTML anak menggunakan berkas `favicon.png` dengan jalur relatif `../favicon.png` agar tidak kosong.
@@ -94,7 +94,7 @@ Seluruh backlog sebelumnya telah diselesaikan:
 2. ✅ **Fitur "Tools Terfavorit" (Starring)**: Bintang ditambahkan di setiap kartu, favorit disimpan di `localStorage` dan baris/grid "Favorit Kamu" dirender secara dinamis di atas grid utama.
 3. ✅ **Dark Mode Toggle**: Switcher ditambahkan di navbar index.html dan seluruh 24 halaman anak telah diinjeksi dengan skrip deteksi tema & styling dark mode.
 4. ✅ **Penyempurnaan & Perbaikan Bug Social Media Downloader**: Menambahkan rantai fallback otomatis dari API TikWM ke server Cobalt jika TikWM down/terjadi error (sehingga download TikTok 100% andal). Menangani status response `picker` pada API Cobalt v10 agar Instagram carousel/slideshow dengan banyak media bisa diunduh secara individu di UI. Menambahkan error handler pada tag `<video>` agar jika pemutaran video langsung di browser terblokir oleh kebijakan CORS/hotlink asal platform (seperti Instagram/YouTube), UI menampilkan pesan edukasi yang ramah dan mengarahkan pengguna untuk mengunduhnya langsung. Mengubah badge status di halaman utama menjadi 'Baru' (aktif).
-5. ✅ **Dukungan PWA di iOS**: Menambahkan meta tags Apple PWA (`apple-mobile-web-app-capable`, dll), ikon sentuh apple (`apple-touch-icon`), deteksi perangkat iOS pada browser Safari, dan modal panduan instalasi step-by-step "Add to Home Screen" jika mendeteksi situs dibuka di iPhone/iPad.
+5. ✅ **Dukungan PWA di iOS**: Menambahkan meta tags Apple PWA (`apple-mobile-web-app-capable`, dll), ikon sentuh apple khusus non-transparan (`apple-touch-icon.png` baru) untuk visual premium bebas bug huruf T, deteksi perangkat iOS pada browser Safari, dan modal panduan instalasi step-by-step "Add to Home Screen" jika mendeteksi situs dibuka di iPhone/iPad.
 
 Berikut adalah backlog baru untuk pengembangan selanjutnya:
 1. **Penyempurnaan Ekstraksi PDF ke Word**: Meningkatkan format ekspor `.doc` agar lebih mempertahankan tata letak visual PDF asli.
